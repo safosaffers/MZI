@@ -83,6 +83,28 @@ class StaticAnalyzer:
                         self.probabilities[j]
         self.condi_probabilities = result
 
+    def check_probabilities(self):
+        print("----ПРОВЕРКА КОРРЕКТНОСТИ ВЫЧИСЛЕНИЙ ВЕРОЯТНОСТЕЙ----")
+        # Проверка безусловных вероятностей:
+        total = sum(self.probabilities)
+        print(f"Суммарное значение вероятностей: {total}")
+        print(" — корректно" if abs(1. - total) < 1E-6 else " — некорректно")
+
+        # Проверка совместных вероятностей:
+        # Сумма всех элементов матрицы
+        total_joint = sum(sum(row) for row in self.join_probabilities)
+        print(f"Суммарное значение совместных вероятностей: {total_joint}")
+        print(" — корректно" if abs(1. - total_joint)
+              < 1E-6 else " — некорректно")
+
+        # Проверка условных вероятностей:
+        total_cond = [sum(self.condi_probabilities[i][j] for i in range(
+            self.alphabet_len)) for j in range(self.alphabet_len)]
+        # Учитываем случай, когда сумма равна 0
+        is_correct_cond = all(abs(1. - i) < 1E-6 or i == 0 for i in total_cond)
+        print(f"Суммарное значение условных вероятностей: {total_cond}")
+        print(" — корректно" if is_correct_cond else " — некорректно")
+
     def draw_histogram(self):
         win = pg.GraphicsLayoutWidget(
             show=True, title="Статический анализатор кода. Каримов С. 1311")
@@ -125,9 +147,5 @@ if __name__ == '__main__':
     # print("Условные вероятности:", analyzer.condi_probabilities)
     print("Энтропия:", analyzer.entropy)
     # Рисование гистограммы
+    analyzer.check_probabilities()
     analyzer.draw_histogram()
-    total = [0 for i in range(analyzer.alphabet_len)]
-    for i in range(analyzer.alphabet_len):
-        for j in range(analyzer.alphabet_len):
-            total[j] += analyzer.condi_probabilities[i][j]
-    print(total)
