@@ -63,7 +63,7 @@ if __name__ == '__main__':
     print("Энтропия A:", analyzer1.count_entropy())
     print("Энтропия B:", analyzer2.count_entropy())
 
-    markov_entropy_AA = analyzer1.count_markov_entropy_with(analyzer1)
+    markov_entropy_AA = analyzer1.count_markov_entropy()
     print("Марковская энтропия H(A|A):", markov_entropy_AA)
 
     markov_entropy_AB = analyzer1.count_markov_entropy_with(analyzer2)

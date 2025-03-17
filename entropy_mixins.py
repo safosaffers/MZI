@@ -49,6 +49,24 @@ class EntropyMixin:
 
         return conditional_probabilities
 
+# Энтропия Марковского процесса первого порядка для одного текста
+
+    def count_markov_entropy(self):
+        self.joint_probabilities_and_frequencies()
+        joint_probabilities = self.joint_probabilities
+        self.condition_probabilities()
+        conditional_probabilities = self.condi_probabilities
+
+        markov_entropy = 0
+        for i in range(self.alphabet_len):
+            for j in range(self.alphabet_len):
+                if joint_probabilities[i][j] != 0 and conditional_probabilities[i][j] != 0:
+                    markov_entropy -= joint_probabilities[i][j] * \
+                        np.log2(conditional_probabilities[i][j])
+
+        return markov_entropy
+
+# Энтропия Марковского процесса для двух текстов
     def count_markov_entropy_with(self, other):
         joint_probabilities = self.calculate_joint_probabilities_with(other)
         conditional_probabilities = self.calculate_conditional_probabilities_with(
