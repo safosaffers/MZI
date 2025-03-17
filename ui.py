@@ -26,17 +26,50 @@ class UI(QMainWindow):
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
 
+        # Кнопки переключения окон (этапов)
+        button_layout = QHBoxLayout()
+        self.table_button = QPushButton("Статический анализатор")
+        self.histogram_button = QPushButton("Результаты анализа")
+        button_layout.addWidget(self.table_button)
+        button_layout.addWidget(self.histogram_button)
+        layout.addLayout(button_layout)
+
+        # Стек для переключения между этапами
+        self.stacked_widget = QStackedWidget()
+        layout.addWidget(self.stacked_widget)
+
+        self.create_load_files_page()
+
+        # # Создание страниц
+        # self.create_table_page()
+        # self.create_histogram_page()
+
+        # Подключение кнопок к переключению страниц
+        self.table_button.clicked.connect(
+            lambda: self.stacked_widget.setCurrentIndex(0))
+        self.histogram_button.clicked.connect(
+            lambda: self.stacked_widget.setCurrentIndex(1))
+
+        # Показываем окно
+        self.show()
+
+    def create_load_files_page(self):
+
+        # Контейнер для кнопок и текстовых полей
+        combined_container = QWidget()
+        combined_layout = QVBoxLayout()  # Вертикальный макет для кнопок и текстовых полей
+
         # Кнопки для открытия файлов
         button_layout = QHBoxLayout()
-        # self.label = QLabel("Выберите файлы для анализа:")
-        # layout.addWidget(self.label)
         self.open_file1 = QPushButton("Открыть файл")
         self.open_file2 = QPushButton("Открыть файл")
         button_layout.addWidget(self.open_file1)
         button_layout.addWidget(self.open_file2)
-        layout.addLayout(button_layout)
         self.open_file1.clicked.connect(lambda: self.open_text_file(1))
         self.open_file2.clicked.connect(lambda: self.open_text_file(2))
+
+        # Добавляем кнопки в общий макет
+        combined_layout.addLayout(button_layout)
 
         # Тексты анализируемых файлов
         texts_layout = QHBoxLayout()
@@ -44,32 +77,18 @@ class UI(QMainWindow):
         self.text_edit2 = QTextEdit()
         texts_layout.addWidget(self.text_edit1)
         texts_layout.addWidget(self.text_edit2)
-        layout.addLayout(texts_layout)
 
-        # # Кнопки переключения
-        # button_layout = QHBoxLayout()
-        # self.table_button = QPushButton("Показать таблицу")
-        # self.histogram_button = QPushButton("Показать гистограмму")
-        # button_layout.addWidget(self.table_button)
-        # button_layout.addWidget(self.histogram_button)
-        # layout.addLayout(button_layout)
+        # Добавляем текстовые поля в общий макет
+        combined_layout.addLayout(texts_layout)
 
-        # # Стек для переключения между таблицей и гистограммой
-        # self.stacked_widget = QStackedWidget()
-        # layout.addWidget(self.stacked_widget)
+        self.button_analyze = QPushButton("Начать анализ")
+        combined_layout.addWidget(self.button_analyze)
 
-        # # Создание страниц
-        # self.create_table_page()
-        # self.create_histogram_page()
+        # Устанавливаем общий макет в контейнер
+        combined_container.setLayout(combined_layout)
 
-        # # Подключение кнопок к переключению страниц
-        # self.table_button.clicked.connect(
-        #     lambda: self.stacked_widget.setCurrentIndex(0))
-        # self.histogram_button.clicked.connect(
-        #     lambda: self.stacked_widget.setCurrentIndex(1))
-
-        # Показываем окно
-        self.show()
+        # Добавляем контейнер в стек
+        self.stacked_widget.addWidget(combined_container)
 
     def open_text_file(self, file_num):
         file_path, _ = QFileDialog.getOpenFileName(
