@@ -8,7 +8,7 @@ class StaticAnalyzer:
     def __init__(self):
         self.alphabet_number = 0
         self.alphabet_len = 34
-        self.alphabet = ""
+        self.alphabet = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя "
         self.filename = ""
         self.text_len = 0
         self.numbers = []

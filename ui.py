@@ -14,7 +14,8 @@ from static_analyzer import StaticAnalyzer
 class UI(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.sa = StaticAnalyzer()  # Подключаем бэкенд
+        self.sa1 = StaticAnalyzer()  # Для первого текста
+        self.sa2 = StaticAnalyzer()  # Для второго текста
         self.setWindowTitle("Анализатор текста")
         self.setGeometry(100, 100, 800, 600)
         self.show()
@@ -27,15 +28,23 @@ class UI(QMainWindow):
 
         # Кнопки для открытия файлов
         button_layout = QHBoxLayout()
-        self.label = QLabel("Выберите файлы для анализа:")
-        layout.addWidget(self.label)
+        # self.label = QLabel("Выберите файлы для анализа:")
+        # layout.addWidget(self.label)
         self.open_file1 = QPushButton("Открыть файл")
         self.open_file2 = QPushButton("Открыть файл")
         button_layout.addWidget(self.open_file1)
         button_layout.addWidget(self.open_file2)
         layout.addLayout(button_layout)
-        self.open_file1.clicked.connect(self.open_text_file_dialog)
-        self.open_file2.clicked.connect(self.open_text_file_dialog)
+        self.open_file1.clicked.connect(lambda: self.open_text_file(1))
+        self.open_file2.clicked.connect(lambda: self.open_text_file(2))
+
+        # Тексты анализируемых файлов
+        texts_layout = QHBoxLayout()
+        self.text_edit1 = QTextEdit()
+        self.text_edit2 = QTextEdit()
+        texts_layout.addWidget(self.text_edit1)
+        texts_layout.addWidget(self.text_edit2)
+        layout.addLayout(texts_layout)
 
         # # Кнопки переключения
         # button_layout = QHBoxLayout()
@@ -62,13 +71,23 @@ class UI(QMainWindow):
         # Показываем окно
         self.show()
 
-    def open_text_file_dialog(self):
+    def open_text_file(self, file_num):
         file_path, _ = QFileDialog.getOpenFileName(
             self, "Open Text File", "", "Text Files (*.txt);;All Files (*)")
         if file_path:
-            self.label.setText(f"Selected text file: {file_path}")
-        else:
-            self.label.setText("No text file selected")
+            if file_num == 1:
+                self.sa1.filename = file_path
+                self.show_fileQTextEdit(file_path, 1)
+            else:
+                self.sa2.filename = file_path
+                self.show_fileQTextEdit(file_path, 2)
+
+    def show_fileQTextEdit(self, file_path, QTextEdit_num):
+        with open(file_path, 'r', encoding='utf-8') as f:
+            if QTextEdit_num == 1:
+                self.text_edit1.append(f.read())
+            else:
+                self.text_edit2.append(f.read())
 
     def create_table_page(self):
         # Виджет для таблиц
