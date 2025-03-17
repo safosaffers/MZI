@@ -1,7 +1,7 @@
 # pip install pytest
 # pip install pytest-cov
 import pytest
-from static_analyzer import StaticAnalyzer
+from staticAnalyzer import StaticAnalyzer
 import os
 
 rus_34 = list("абвгдежзийклмнопрстуфхцчшщъыьэюяё ")
