@@ -8,7 +8,7 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 import pyqtgraph as pg
-from static_analyzer import StaticAnalyzer
+from static_analyzer import StaticAnalyzer  # import backend
 
 
 class UI(QMainWindow):
@@ -29,9 +29,11 @@ class UI(QMainWindow):
         # Кнопки переключения окон (этапов)
         button_layout = QHBoxLayout()
         self.table_button = QPushButton("Статический анализатор")
-        self.histogram_button = QPushButton("Результаты анализа")
+        self.analyze_result = QPushButton("Результаты анализа")
+        self.analyze_result.setEnabled(False)
+
         button_layout.addWidget(self.table_button)
-        button_layout.addWidget(self.histogram_button)
+        button_layout.addWidget(self.analyze_result)
         layout.addLayout(button_layout)
 
         # Стек для переключения между этапами
@@ -47,7 +49,7 @@ class UI(QMainWindow):
         # Подключение кнопок к переключению страниц
         self.table_button.clicked.connect(
             lambda: self.stacked_widget.setCurrentIndex(0))
-        self.histogram_button.clicked.connect(
+        self.analyze_result.clicked.connect(
             lambda: self.stacked_widget.setCurrentIndex(1))
 
         # Показываем окно
@@ -82,7 +84,7 @@ class UI(QMainWindow):
         combined_layout.addLayout(texts_layout)
 
         self.button_analyze = QPushButton("Начать анализ")
-        self.histogram_button.clicked.connect(self.start_analyze)
+        self.button_analyze.clicked.connect(self.start_analyze)
         combined_layout.addWidget(self.button_analyze)
 
         # Устанавливаем общий макет в контейнер
@@ -112,9 +114,16 @@ class UI(QMainWindow):
                 self.text_edit2.append(f.read())
 
     def start_analyze(self):
+        if self.sa1.filename == "" or self.sa2.filename == "":
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Warning)
+            msg.setWindowTitle("Ошибка")
+            msg.setText("Пожалуйста, выберите все файлы для анализа")
+            msg.exec_()
+            return
+        self.analyze_result.setEnabled(True)
         self.sa1.single_text_analyze()
         self.sa2.single_text_analyze()
-
         # Контейнер для статистики
         stats_container = QWidget()
         stats_layout = QGridLayout()  # Табличный макет
