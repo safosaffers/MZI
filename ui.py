@@ -85,6 +85,38 @@ class UI(QMainWindow):
         # Добавляем текстовые поля в общий макет
         combined_layout.addLayout(texts_layout)
 
+        # Выбор алфавита
+        self.lbl_analyze_alphabet = QLabel("Выберите алфавит для анализа:")
+        combined_layout.addWidget(self.lbl_analyze_alphabet)
+
+        # Создаем контейнер для радиокнопок
+        radiobuttons_layout = QHBoxLayout()
+        # Группа для управления радиокнопками
+        self.radio_group = QButtonGroup(self)
+
+        # Список алфавитов с их метками и значениями
+        alphabets = [
+            ("Русский", "rus_34"),
+            ("Русский без 'ё' и '_'", "rus_32"),
+            ("Латиница", "lat_27"),
+            ("Латиница без 'j' и ' '", "lat_25")
+        ]
+
+        # Создаем радиокнопки
+        for idx, (label, value) in enumerate(alphabets):
+            radio = QRadioButton(label)
+            radio.setChecked(idx == 0)  # Первая кнопка активна по умолчанию
+            radio.alphabet = value  # Добавляем пользовательский атрибут
+            radiobuttons_layout.addWidget(radio)
+            self.radio_group.addButton(radio)  # Добавляем в группу
+            setattr(self, f"radio_{value}", radio)  # Сохраняем в self
+
+        # Подключаем сигналы (если нужно)
+        self.radio_group.buttonClicked.connect(self.rb_handle_alphabet_change)
+
+        # Добавляем макет с радиокнопками
+        combined_layout.addLayout(radiobuttons_layout)
+        # Кнопка анализа
         self.button_analyze = QPushButton("Начать анализ")
         self.button_analyze.clicked.connect(self.start_analyze)
         combined_layout.addWidget(self.button_analyze)
@@ -96,6 +128,11 @@ class UI(QMainWindow):
         self.stacked_widget.addWidget(combined_container)
 
     # Открытие текстовых файлов и отображение их содержимого
+    def rb_handle_alphabet_change(self):
+        if self.sa1.file_path != "":
+            self.show_fileQTextEdit(self.sa1.file_path, 1)
+        if self.sa2.file_path != "":
+            self.show_fileQTextEdit(self.sa2.file_path, 2)
 
     def open_text_file(self, file_num):
         sa = self.sa1 if file_num == 1 else self.sa2
@@ -125,6 +162,8 @@ class UI(QMainWindow):
         other_sa = self.sa2 if QTextEdit_num == 1 else self.sa1
 
         # Загружаем текст
+        self.sa1.set_alphabet(self.radio_group.checkedButton().alphabet)
+        self.sa2.set_alphabet(self.radio_group.checkedButton().alphabet)
         trimmed_to_max_len = target_sa.process_text_forms(
             file_path,  other_sa.text_len)
         # Отображаем его
@@ -164,6 +203,7 @@ class UI(QMainWindow):
             self.show_msg_box_file_not_chosen()
             return
         self.analyze_result.setEnabled(True)
+
         self.sa1.single_text_analyze()
         self.sa2.single_text_analyze()
         # Контейнер для статистики

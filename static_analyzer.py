@@ -29,20 +29,20 @@ class StaticAnalyzer:
         self.count_entropy()
         self.count_markov_entropy()
 
-    def set_alphabet(self, alphabet_number):
+    def set_alphabet(self, alphabet_name):
         rus_34 = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя "
         rus_32 = "абвгдежзийклмнопрстуфхцчшщъыьэюя"
         lat_27 = "abcdefghijklmnopqrstuvwxyz "
         lat_25 = "abcdefghiklmnopqrstuvwxyz"
-        self.alphabet_number = alphabet_number
-        match alphabet_number:
-            case 0:
+        self.alphabet_name = alphabet_name
+        match alphabet_name:
+            case "rus_34":
                 self.alphabet = rus_34
-            case 1:
+            case "rus_32":
                 self.alphabet = rus_32
-            case 2:
+            case "lat_27":
                 self.alphabet = lat_27
-            case 3:
+            case "lat_25":
                 self.alphabet = lat_25
         self.alphabet_len = len(self.alphabet)+1
 
@@ -54,9 +54,7 @@ class StaticAnalyzer:
         self.text_in_alphabet = []
 
     def process_text_forms(self, file_path, max_len=-1):
-        self.text = []
-        self.text_in_numbers = []
-        self.text_in_alphabet = []
+        self.clear_text_data()
         self.file_path = file_path
         self.text_in_numbers.append(0)  # начало файла
         self.text_len = 2  # добавляем два символа начало и конец файла
