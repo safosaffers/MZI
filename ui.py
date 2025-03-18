@@ -76,7 +76,9 @@ class UI(QMainWindow):
         # Тексты анализируемых файлов
         texts_layout = QHBoxLayout()
         self.text_edit1 = QTextEdit()
+        self.text_edit1.setReadOnly(True)
         self.text_edit2 = QTextEdit()
+        self.text_edit2.setReadOnly(True)
         texts_layout.addWidget(self.text_edit1)
         texts_layout.addWidget(self.text_edit2)
 
