@@ -63,12 +63,12 @@ class UI(QMainWindow):
 
         # Кнопки для открытия файлов
         button_layout = QHBoxLayout()
-        self.open_file1 = QPushButton("Открыть файл")
-        self.open_file2 = QPushButton("Открыть файл")
-        button_layout.addWidget(self.open_file1)
-        button_layout.addWidget(self.open_file2)
-        self.open_file1.clicked.connect(lambda: self.open_text_file(1))
-        self.open_file2.clicked.connect(lambda: self.open_text_file(2))
+        self.button_open_file1 = QPushButton("Загрузить файл")
+        self.button_open_file2 = QPushButton("Загрузить файл")
+        button_layout.addWidget(self.button_open_file1)
+        button_layout.addWidget(self.button_open_file2)
+        self.button_open_file1.clicked.connect(lambda: self.open_text_file(1))
+        self.button_open_file2.clicked.connect(lambda: self.open_text_file(2))
 
         # Добавляем кнопки в общий макет
         combined_layout.addLayout(button_layout)
@@ -96,26 +96,63 @@ class UI(QMainWindow):
         self.stacked_widget.addWidget(combined_container)
 
     # Открытие текстовых файлов и отображение их содержимого
+
     def open_text_file(self, file_num):
+        sa = self.sa1 if file_num == 1 else self.sa2
+        text_edit = self.text_edit1 if file_num == 1 else self.text_edit2
+        button = self.button_open_file1 if file_num == 1 else self.button_open_file2
+
+        # Если файл уже открыт, очищаем данные
+        if sa.file_path:
+            sa.clear_text_data()
+            text_edit.setText("")
+            button.setText("Открыть файл")
+            return
+
+        # Открываем диалог выбора файла
         file_path, _ = QFileDialog.getOpenFileName(
             self, "Open Text File", "", "Text Files (*.txt);;All Files (*)")
         if file_path:
-            if file_num == 1:
-                self.sa1.filename = file_path
-                self.show_fileQTextEdit(file_path, 1)
-            else:
-                self.sa2.filename = file_path
-                self.show_fileQTextEdit(file_path, 2)
+            sa.file_path = file_path
+            self.show_fileQTextEdit(file_path, file_num)
+            button.setText("Очистить файл")
 
     # Отображение содержимого файла
     def show_fileQTextEdit(self, file_path, QTextEdit_num):
-        with open(file_path, 'r', encoding='utf-8') as f:
-            if QTextEdit_num == 1:
-                self.text_edit1.setText("")
-                self.text_edit1.append(f.read())
-            else:
-                self.text_edit2.setText("")
-                self.text_edit2.append(f.read())
+        target_edit = self.text_edit1 if QTextEdit_num == 1 else self.text_edit2
+        other_edit = self.text_edit2 if QTextEdit_num == 1 else self.text_edit1
+        target_sa = self.sa1 if QTextEdit_num == 1 else self.sa2
+        other_sa = self.sa2 if QTextEdit_num == 1 else self.sa1
+
+        # Загружаем текст
+        trimmed_to_max_len = target_sa.process_text_forms(
+            file_path,  other_sa.text_len)
+        # Отображаем его
+        target_edit.setText(''.join(target_sa.text_in_alphabet))
+
+        # Если текст был укорочен, сообщаем об этом
+        if trimmed_to_max_len:
+            self.show_msg_box_text_was_stripped(QTextEdit_num)
+
+        if target_sa.text_len < other_sa.text_len:
+            other_sa.text_in_alphabet = other_sa.text_in_alphabet[:target_sa.text_len]
+            other_edit.setText(''.join(other_sa.text_in_alphabet))
+            self.show_msg_box_text_was_stripped(2 if QTextEdit_num == 1 else 1)
+
+    def show_msg_box_text_was_stripped(self, num):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Warning)
+        msg.setWindowTitle("Предупреждение")
+        msg.setText(
+            f"Текст {'A' if num == 1 else 'B'} был урезан для соответствия длине текста {'B' if num == 1 else 'A'}.")
+        msg.exec_()
+
+    def show_msg_box_file_not_chosen(self):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Warning)
+        msg.setWindowTitle("Ошибка")
+        msg.setText("Пожалуйста, выберите все файлы для анализа")
+        msg.exec_()
 
     def start_analyze(self):
         # Удаляем старые результаты анализа, если
@@ -123,12 +160,8 @@ class UI(QMainWindow):
         if widget:
             self.stacked_widget.removeWidget(widget)
             widget.deleteLater()
-        if self.sa1.filename == "" or self.sa2.filename == "":
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Warning)
-            msg.setWindowTitle("Ошибка")
-            msg.setText("Пожалуйста, выберите все файлы для анализа")
-            msg.exec_()
+        if self.sa1.file_path == "" or self.sa2.file_path == "":
+            self.show_msg_box_file_not_chosen()
             return
         self.analyze_result.setEnabled(True)
         self.sa1.single_text_analyze()

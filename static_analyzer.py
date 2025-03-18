@@ -9,9 +9,11 @@ class StaticAnalyzer:
         self.alphabet_number = 0
         self.alphabet_len = 35  # 34 +1
         self.alphabet = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя "
-        self.filename = ""
-        self.text_len = 0
-        self.numbers = []
+        self.file_path = ""
+        self.text_len = -1  # текс не был загружен
+        self.text = []
+        self.text_in_numbers = []
+        self.text_in_alphabet = []
         self.probabilities = []
         self.frequencies = []
         self.joint_probabilities = []
@@ -21,7 +23,6 @@ class StaticAnalyzer:
         self.markov_entropy = 0
 
     def single_text_analyze(self):
-        self.text_into_numbers()
         self.probabilities_and_frequencies()
         self.joint_probabilities_and_frequencies()
         self.condition_probabilities()
@@ -45,17 +46,31 @@ class StaticAnalyzer:
                 self.alphabet = lat_25
         self.alphabet_len = len(self.alphabet)+1
 
-    def text_into_numbers(self):
-        result = []
-        result.append(0)  # начало файла
+    def clear_text_data(self):
+        self.text_len = -1
+        self.file_path = ""
+        self.text = []
+        self.text_in_numbers = []
+        self.text_in_alphabet = []
+
+    def process_text_forms(self, file_path, max_len=-1):
+        self.text = []
+        self.text_in_numbers = []
+        self.text_in_alphabet = []
+        self.file_path = file_path
+        self.text_in_numbers.append(0)  # начало файла
         self.text_len = 2  # добавляем два символа начало и конец файла
-        with open(self.filename, 'r', encoding='utf-8') as f:
-            while char := f.read(1).lower():
+        with open(file_path, 'r', encoding='utf-8') as f:
+            while (max_len == -1 or self.text_len < max_len) and (char := f.read(1)):
+                self.text.append(char)
+                char = char.lower()
                 if char in self.alphabet:
-                    result.append(self.alphabet.find(char)+1)
+                    self.text_in_alphabet.append(char)
+                    self.text_in_numbers.append(self.alphabet.find(char)+1)
                     self.text_len += 1
-        result.append(0)  # конец файла
-        self.numbers = result
+            trimmed_to_max_len = bool(f.read(1))
+        self.text_in_numbers.append(0)  # конец файла
+        return trimmed_to_max_len
 
 #################################################################################
 #                       Методы для вычисления вероятностей                      #
@@ -67,7 +82,7 @@ class StaticAnalyzer:
     def probabilities_and_frequencies(self):
         frequencies = [0] * (self.alphabet_len)
         total = 0
-        for i in self.numbers:
+        for i in self.text_in_numbers:
             frequencies[i] += 1
             total += 1
         probabilities = [freq / total if total !=
@@ -80,10 +95,10 @@ class StaticAnalyzer:
         joint_frequencies = [
             [0 for _ in range(self.alphabet_len)] for _ in range(self.alphabet_len)]  # +1
         total_pairs = 1  # пары начала/конца и пара начало-конец
-        text_len = len(self.numbers)
+        text_len = len(self.text_in_numbers)
         for i in range(text_len-1):
-            char_1 = self.numbers[i]
-            char_2 = self.numbers[i+1]  # tab
+            char_1 = self.text_in_numbers[i]
+            char_2 = self.text_in_numbers[i+1]  # tab
             joint_frequencies[char_1][char_2] += 1
             total_pairs += 1
         joint_frequencies[0][0] = 1  # "Закольцовывание" начала и конца файла
@@ -142,11 +157,11 @@ class StaticAnalyzer:
         joint_frequencies = [
             [0 for _ in range(alp_len)] for _ in range(alp_len)]
         # Считаем частоты пар символов из обоих текстов
-        minLen = min(len(self.numbers), len(other.numbers))
+        minLen = min(self.text_len, other.text_len)
         total_pairs = 0
         for i in range(minLen):  # Для случаев двух текстов последний "нуль символ" не смотрится
-            char_a = self.numbers[i]
-            char_b = other.numbers[i]
+            char_a = self.text_in_numbers[i]
+            char_b = other.text_in_numbers[i]
             joint_frequencies[char_a][char_b] += 1
             total_pairs += 1
 
