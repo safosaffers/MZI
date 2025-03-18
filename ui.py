@@ -111,11 +111,18 @@ class UI(QMainWindow):
     def show_fileQTextEdit(self, file_path, QTextEdit_num):
         with open(file_path, 'r', encoding='utf-8') as f:
             if QTextEdit_num == 1:
+                self.text_edit1.setText("")
                 self.text_edit1.append(f.read())
             else:
+                self.text_edit2.setText("")
                 self.text_edit2.append(f.read())
 
     def start_analyze(self):
+        # Удаляем старые результаты анализа, если
+        widget = self.stacked_widget.widget(1)
+        if widget:
+            self.stacked_widget.removeWidget(widget)
+            widget.deleteLater()
         if self.sa1.filename == "" or self.sa2.filename == "":
             msg = QMessageBox()
             msg.setIcon(QMessageBox.Warning)
