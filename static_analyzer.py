@@ -7,7 +7,7 @@ import numpy as np
 class StaticAnalyzer:
     def __init__(self):
         self.alphabet_number = 0
-        self.alphabet_len = 34
+        self.alphabet_len = 35  # 34 +1
         self.alphabet = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя "
         self.filename = ""
         self.text_len = 0
@@ -18,6 +18,15 @@ class StaticAnalyzer:
         self.joint_frequencies = []
         self.condi_probabilities = []
         self.entropy = 0
+        self.markov_entropy = 0
+
+    def single_text_analyze(self):
+        self.text_into_numbers()
+        self.probabilities_and_frequencies()
+        self.joint_probabilities_and_frequencies()
+        self.condition_probabilities()
+        self.count_entropy()
+        self.count_markov_entropy()
 
     def set_alphabet(self, alphabet_number):
         rus_34 = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя "
@@ -36,9 +45,7 @@ class StaticAnalyzer:
                 self.alphabet = lat_25
         self.alphabet_len = len(self.alphabet)+1
 
-    def text_into_numbers(self, filename, alphabet_number):
-        self.filename = filename
-        self.set_alphabet(alphabet_number)
+    def text_into_numbers(self):
         result = []
         result.append(0)  # начало файла
         self.text_len = 2  # добавляем два символа начало и конец файла
@@ -193,11 +200,11 @@ class StaticAnalyzer:
                 if joint_probabilities[i][j] != 0 and conditional_probabilities[i][j] != 0:
                     markov_entropy -= joint_probabilities[i][j] * \
                         np.log2(conditional_probabilities[i][j])
-
-        return markov_entropy
+        self.markov_entropy = markov_entropy
+        return self.markov_entropy
 
 # Энтропия Марковского процесса для двух текстов
-    def count_markov_entropy_with(self, other):
+    def markov_entropy_with(self, other):
         joint_probabilities = self.calculate_joint_probabilities_with(other)
         conditional_probabilities = self.calculate_conditional_probabilities_with(
             other)
@@ -212,7 +219,7 @@ class StaticAnalyzer:
         return markov_entropy
 
 # Вычисление совместной энтропии
-    def count_joint_entropy_with(self, other):
+    def joint_entropy_with(self, other):
         joint_probabilities = self.calculate_joint_probabilities_with(other)
 
         joint_entropy = 0
