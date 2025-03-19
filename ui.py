@@ -332,12 +332,13 @@ class UI(QMainWindow):
 
     def add_tables_to_layout(self, layout, sa):
         # Функция для создания таблицы
-        def create_table(data, title):
+        def create_table(data, title, alphabet=None):
             table = QTableWidget()
             table.setRowCount(len(data))
             table.setColumnCount(
                 len(data[0]) if isinstance(data[0], list) else 1)
 
+            # Заполнение таблицы данными
             for i in range(len(data)):
                 if isinstance(data[0], list):  # Для матриц
                     for j in range(len(data[0])):
@@ -347,14 +348,29 @@ class UI(QMainWindow):
                     table.setItem(i, 0, QTableWidgetItem(
                         str(round(data[i], 6))))
 
+            # Установка заголовков строк и столбцов
+            if alphabet:
+                if isinstance(data[0], list):  # Для матриц
+                    table.setVerticalHeaderLabels(
+                        [alphabet[i] for i in range(len(data))])
+                    table.setHorizontalHeaderLabels(
+                        [alphabet[j] for j in range(len(data[0]))])
+                else:  # Для одномерных массивов
+                    table.setVerticalHeaderLabels(
+                        [alphabet[i] for i in range(len(data))])
+
             label = QLabel(title)
             layout.addWidget(label)
             layout.addWidget(table)
-
-        # Добавляем таблицы
-        create_table(sa.probabilities, "Безусловные вероятности")
-        create_table(sa.joint_probabilities, "Совместные вероятности")
-        create_table(sa.condi_probabilities, "Условные вероятности")
+        sa.alphabet
+        # Добавляем таблицы с использованием алфавита
+        new_alphabet = "Ø" + sa.alphabet[:-1]+"_"
+        create_table(sa.probabilities,
+                     "Безусловные вероятности: P(a_i)", new_alphabet)
+        create_table(sa.joint_probabilities,
+                     "Совместные вероятности: P(a_{i}|a_{i+1})", new_alphabet)
+        create_table(sa.condi_probabilities,
+                     "Условные вероятности: P(a_{i}|a_{i-1})", new_alphabet)
 
     def histograms_page(self):
         # Создаем стек для гистограмм
