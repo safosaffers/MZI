@@ -196,7 +196,7 @@ class UI(QMainWindow):
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Warning)
         msg.setWindowTitle("Ошибка")
-        msg.setText("Пожалуйста, выберите все файлы для анализа")
+        msg.setText("Пожалуйста, выберите файл(ы) для анализа")
         msg.exec_()
 
     def start_analyze(self):
@@ -205,7 +205,7 @@ class UI(QMainWindow):
         if widget:
             self.stacked_widget.removeWidget(widget)
             widget.deleteLater()
-        if self.sa1.file_path == "" or self.sa2.file_path == "":
+        if self.sa1.file_path == "" and self.sa2.file_path == "":
             self.show_msg_box_file_not_chosen()
             return
         self.analyze_result.setEnabled(True)
@@ -217,51 +217,37 @@ class UI(QMainWindow):
         stats_layout = QGridLayout()  # Табличный макет
 
         # Добавляем заголовки и значения в макет
-        # Строка 0, столбец 0
-        stats_layout.addWidget(QLabel("Энтропия A:"), 0, 0)
-        # Строка 0, столбец 1
-        stats_layout.addWidget(QLabel(f"{self.sa1.entropy:.4f}"), 0, 1)
+        if self.sa1.file_path != "":
+            stats_layout.addWidget(QLabel("Энтропия A:"), 0, 0)
+            stats_layout.addWidget(QLabel(f"{self.sa1.entropy:.4f}"), 0, 1)
 
-        # Строка 0, столбец 2
-        stats_layout.addWidget(QLabel("Энтропия B:"), 0, 2)
-        # Строка 0, столбец 3
-        stats_layout.addWidget(QLabel(f"{self.sa2.entropy:.4f}"), 0, 3)
+            stats_layout.addWidget(QLabel("Марковская энтропия H(A|A):"), 1, 0)
+            stats_layout.addWidget(
+                QLabel(f"{self.sa1.markov_entropy:.4f}"), 1, 1)
+        if self.sa2.file_path != "":
+            stats_layout.addWidget(QLabel("Энтропия B:"), 0, 2)
+            stats_layout.addWidget(QLabel(f"{self.sa2.entropy:.4f}"), 0, 3)
 
-        # Строка 1, столбец 0
-        stats_layout.addWidget(QLabel("Марковская энтропия H(A|A):"), 1, 0)
-        # Строка 1, столбец 1
-        stats_layout.addWidget(
-            QLabel(f"{self.sa1.markov_entropy:.4f}"), 1, 1)
+            stats_layout.addWidget(QLabel("Марковская энтропия H(B|B):"), 1, 2)
+            stats_layout.addWidget(
+                QLabel(f"{self.sa2.markov_entropy:.4f}"), 1, 3)
 
-        # Строка 1, столбец 2
-        stats_layout.addWidget(QLabel("Марковская энтропия H(B|B):"), 1, 2)
-        # Строка 1, столбец 3
-        stats_layout.addWidget(
-            QLabel(f"{self.sa2.markov_entropy:.4f}"), 1, 3)
+        if self.sa2.file_path != "" and self.sa1.file_path != "":
+            stats_layout.addWidget(QLabel("Марковская энтропия H(A|B):"), 2, 0)
+            stats_layout.addWidget(
+                QLabel(f"{self.sa1.markov_entropy_with(self.sa2):.4f}"), 2, 1)
 
-        # Строка 2, столбец 0
-        stats_layout.addWidget(QLabel("Марковская энтропия H(A|B):"), 2, 0)
-        # Строка 2, столбец 1
-        stats_layout.addWidget(
-            QLabel(f"{self.sa1.markov_entropy_with(self.sa2):.4f}"), 2, 1)
+            stats_layout.addWidget(QLabel("Марковская энтропия H(B|A):"), 2, 2)
+            stats_layout.addWidget(
+                QLabel(f"{self.sa2.markov_entropy_with(self.sa1):.4f}"), 2, 3)
 
-        # Строка 2, столбец 2
-        stats_layout.addWidget(QLabel("Марковская энтропия H(B|A):"), 2, 2)
-        # Строка 2, столбец 3
-        stats_layout.addWidget(
-            QLabel(f"{self.sa2.markov_entropy_with(self.sa1):.4f}"), 2, 3)
+            stats_layout.addWidget(QLabel("Совместная энтропия H(A,B):"), 3, 0)
+            stats_layout.addWidget(
+                QLabel(f"{self.sa1.joint_entropy_with(self.sa2):.4f}"), 3, 1)
 
-        # Строка 3, столбец 0
-        stats_layout.addWidget(QLabel("Совместная энтропия H(A,B):"), 3, 0)
-        # Строка 3, столбец 1
-        stats_layout.addWidget(
-            QLabel(f"{self.sa1.joint_entropy_with(self.sa2):.4f}"), 3, 1)
-
-        # Строка 3, столбец 2
-        stats_layout.addWidget(QLabel("Совместная энтропия H(B,A):"), 3, 2)
-        # Строка 3, столбец 3
-        stats_layout.addWidget(
-            QLabel(f"{self.sa2.joint_entropy_with(self.sa1):.4f}"), 3, 3)
+            stats_layout.addWidget(QLabel("Совместная энтропия H(B,A):"), 3, 2)
+            stats_layout.addWidget(
+                QLabel(f"{self.sa2.joint_entropy_with(self.sa1):.4f}"), 3, 3)
 
         # Устанавливаем макет в контейнер
         stats_container.setLayout(stats_layout)
