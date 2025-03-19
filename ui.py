@@ -28,7 +28,7 @@ class UI(QMainWindow):
 
         # Кнопки переключения окон (этапов)
         button_layout = QHBoxLayout()
-        self.table_button = QPushButton("Статический анализатор")
+        self.table_button = QPushButton("Выбор файлов для анализа")
         self.analyze_result = QPushButton("Результаты анализа")
         self.analyze_result.setEnabled(False)
 
@@ -40,7 +40,8 @@ class UI(QMainWindow):
         self.stacked_widget = QStackedWidget()
         layout.addWidget(self.stacked_widget)
 
-        self.create_load_files_page()
+        # Страница выбора файлов для анализа
+        self.selecting_files_for_analysis_page()
 
         # # Создание страниц
         # self.create_table_page()
@@ -55,7 +56,7 @@ class UI(QMainWindow):
         # Показываем окно
         self.show()
 
-    def create_load_files_page(self):
+    def selecting_files_for_analysis_page(self):
 
         # Контейнер для кнопок и текстовых полей
         combined_container = QWidget()
@@ -200,6 +201,14 @@ class UI(QMainWindow):
         msg.exec_()
 
     def start_analyze(self):
+        # Выполняем анализ
+        self.sa1.single_text_analyze()
+        self.sa2.single_text_analyze()
+
+        # Страница выбора файлов для анализа
+        self.analyze_results_page()
+
+    def analyze_results_page(self):
         # Удаляем старые результаты анализа, если он производился
         widget = self.stacked_widget.widget(1)
         if widget:
@@ -210,12 +219,44 @@ class UI(QMainWindow):
             return
         self.analyze_result.setEnabled(True)
 
-        self.sa1.single_text_analyze()
-        self.sa2.single_text_analyze()
-        # Контейнер для статистики
-        stats_container = QWidget()
-        stats_layout = QGridLayout()  # Табличный макет
+        main_analyze_container = QWidget()
+        main_analyze_layout = QVBoxLayout()
+        main_analyze_container.setLayout(main_analyze_layout)
 
+        # Добавляем кнопки переключения между
+        btns_container = QWidget()
+        button_layout = QHBoxLayout()
+        btns_container.setLayout(button_layout)
+        btn1 = QPushButton("Энтропии")
+        btn2 = QPushButton("Таблицы вероятностей")
+        btn3 = QPushButton("Гистограммы частот")
+        btn1.clicked.connect(lambda: self.stats_container.setCurrentIndex(0))
+        btn2.clicked.connect(lambda: self.stats_container.setCurrentIndex(1))
+        btn3.clicked.connect(lambda: self.stats_container.setCurrentIndex(2))
+        button_layout.addWidget(btn1)
+        button_layout.addWidget(btn2)
+        button_layout.addWidget(btn3)
+        main_analyze_layout.addWidget(btns_container)
+
+        # Контейнер для статистики
+        self.stats_container = QStackedWidget()
+
+        # 1-я страница для контейнера статистики
+        # – Информация о вычисленной энтропии:
+        self.stats_container.addWidget(self.entropy_info_widget())
+        # 2-я – Информация о вероятностях в текстах:
+        self.stats_container.addWidget(self.probabilities_tables_page())
+        # 3-я – Гистограмма частот символов текстов:
+        self.stats_container.addWidget(self.histograms_page())
+        # Добавляем контейнер в стек
+        main_analyze_layout.addWidget(self.stats_container)
+
+        self.stacked_widget.addWidget(main_analyze_container)
+
+    def entropy_info_widget(self):
+        container = QWidget()
+        stats_layout = QGridLayout()  # Табличный макет
+        container.setLayout(stats_layout)
         # Добавляем заголовки и значения в макет
         if self.sa1.file_path != "":
             stats_layout.addWidget(QLabel("Энтропия A:"), 0, 0)
@@ -231,7 +272,6 @@ class UI(QMainWindow):
             stats_layout.addWidget(QLabel("Марковская энтропия H(B|B):"), 1, 2)
             stats_layout.addWidget(
                 QLabel(f"{self.sa2.markov_entropy:.4f}"), 1, 3)
-
         if self.sa2.file_path != "" and self.sa1.file_path != "":
             stats_layout.addWidget(QLabel("Марковская энтропия H(A|B):"), 2, 0)
             stats_layout.addWidget(
@@ -248,23 +288,52 @@ class UI(QMainWindow):
             stats_layout.addWidget(QLabel("Совместная энтропия H(B,A):"), 3, 2)
             stats_layout.addWidget(
                 QLabel(f"{self.sa2.joint_entropy_with(self.sa1):.4f}"), 3, 3)
+        return container
 
-        # Устанавливаем макет в контейнер
-        stats_container.setLayout(stats_layout)
+    def probabilities_tables_page(self):
+        # Создаем стек для таблиц
+        stacked_widget = QStackedWidget()
 
-        # Добавляем контейнер в стек
-        self.stacked_widget.addWidget(stats_container)
+        # Первая страница (Таблицы для A)
+        page1 = QWidget()
+        layout1 = QVBoxLayout()
+        layout1.addWidget(QLabel("Таблицы для текста A"))
+        self.add_tables_to_layout(layout1, self.sa1)
+        page1.setLayout(layout1)
 
-    def create_table_page(self):
-        # Виджет для таблиц
-        table_widget = QWidget()
-        table_layout = QVBoxLayout()
-        table_widget.setLayout(table_layout)
+        # Вторая страница (Таблицы для B)
+        page2 = QWidget()
+        layout2 = QVBoxLayout()
+        layout2.addWidget(QLabel("Таблицы для текста B"))
+        self.add_tables_to_layout(layout2, self.sa2)
+        page2.setLayout(layout2)
 
+        # Добавляем страницы в стек
+        stacked_widget.addWidget(page1)
+        stacked_widget.addWidget(page2)
+
+        # Добавляем кнопки переключения
+        button_layout = QHBoxLayout()
+        btn1 = QPushButton("Таблицы A")
+        btn2 = QPushButton("Таблицы B")
+        btn1.clicked.connect(lambda: stacked_widget.setCurrentIndex(0))
+        btn2.clicked.connect(lambda: stacked_widget.setCurrentIndex(1))
+        button_layout.addWidget(btn1)
+        button_layout.addWidget(btn2)
+
+        # Общий контейнер
+        container = QWidget()
+        layout = QVBoxLayout()
+        layout.addLayout(button_layout)
+        layout.addWidget(stacked_widget)
+        container.setLayout(layout)
+
+        return container
+
+    def add_tables_to_layout(self, layout, sa):
         # Функция для создания таблицы
         def create_table(data, title):
             table = QTableWidget()
-            table.setWindowTitle(title)
             table.setRowCount(len(data))
             table.setColumnCount(
                 len(data[0]) if isinstance(data[0], list) else 1)
@@ -279,35 +348,76 @@ class UI(QMainWindow):
                         str(round(data[i], 6))))
 
             label = QLabel(title)
-            table_layout.addWidget(label)
-            table_layout.addWidget(table)
+            layout.addWidget(label)
+            layout.addWidget(table)
 
         # Добавляем таблицы
-        create_table(self.sa.probabilities, "Безусловные вероятности")
-        create_table(self.sa.joint_probabilities, "Совместные вероятности")
-        create_table(self.sa.condi_probabilities, "Условные вероятности")
+        create_table(sa.probabilities, "Безусловные вероятности")
+        create_table(sa.joint_probabilities, "Совместные вероятности")
+        create_table(sa.condi_probabilities, "Условные вероятности")
 
-        # Добавляем виджет таблиц в стек
-        self.stacked_widget.addWidget(table_widget)
+    def histograms_page(self):
+        # Создаем стек для гистограмм
+        stacked_widget = QStackedWidget()
 
-    def create_histogram_page(self):
-        # Виджет для гистограммы
+        # Первая страница (Гистограмма A)
+        page1 = QWidget()
+        layout1 = QVBoxLayout()
+        layout1.addWidget(
+            QLabel("Гистограмма встречаемости символов текста A"))
+        layout1.addWidget(self.create_histogram(self.sa1))
+        page1.setLayout(layout1)
+
+        # Вторая страница (Гистограмма B)
+        page2 = QWidget()
+        layout2 = QVBoxLayout()
+        layout2.addWidget(
+            QLabel("Гистограмма встречаемости символов текста B"))
+        layout2.addWidget(self.create_histogram(self.sa2))
+        page2.setLayout(layout2)
+
+        # Добавляем страницы в стек
+        stacked_widget.addWidget(page1)
+        stacked_widget.addWidget(page2)
+
+        # Добавляем кнопки переключения
+        button_layout = QHBoxLayout()
+        btn1 = QPushButton("Гистограмма A")
+        btn2 = QPushButton("Гистограмма B")
+        btn1.clicked.connect(lambda: stacked_widget.setCurrentIndex(0))
+        btn2.clicked.connect(lambda: stacked_widget.setCurrentIndex(1))
+        button_layout.addWidget(btn1)
+        button_layout.addWidget(btn2)
+
+        # Общий контейнер
+        container = QWidget()
+        layout = QVBoxLayout()
+        layout.addLayout(button_layout)
+        layout.addWidget(stacked_widget)
+        container.setLayout(layout)
+
+        return container
+
+    def create_histogram(self, current_sa):
         histogram_widget = pg.GraphicsLayoutWidget()
         histogram_widget.setBackground(QColor(33, 46, 74))
 
-        alphabet_list = list(self.alphabet)
+        alphabet_list = list(current_sa.alphabet)
         new_alphabet = alphabet_list[:-1] + ["'_'"]
         xdict = dict(enumerate(new_alphabet))
         stringaxis = pg.AxisItem(orientation='bottom')
         stringaxis.setTicks([xdict.items()])
 
         plt1 = histogram_widget.addPlot(axisItems={'bottom': stringaxis})
-        plt1.setLimits(xMin=-2, xMax=self.alphabet_len - 1, minXRange=7, maxXRange=100,
-                       yMin=0, yMax=max(self.frequencies[1:]) + 1, minYRange=100, maxYRange=100)
+        plt1.setLimits(
+            xMin=-2, xMax=current_sa.alphabet_len - 1, minXRange=7, maxXRange=100,
+            yMin=0, yMax=max(current_sa.frequencies[1:]) + 1, minYRange=100, maxYRange=100
+        )
 
-        hist = pg.BarGraphItem(x=range(self.alphabet_len - 1), height=self.frequencies[1:], width=0.8,
-                               pen=QColor(33, 46, 74), brush=QColor(198, 104, 51))
+        hist = pg.BarGraphItem(
+            x=range(current_sa.alphabet_len - 1), height=current_sa.frequencies[1:], width=0.8,
+            pen=QColor(33, 46, 74), brush=QColor(198, 104, 51)
+        )
         plt1.addItem(hist)
 
-        # Добавляем виджет гистограммы в стек
-        self.stacked_widget.addWidget(histogram_widget)
+        return histogram_widget
