@@ -86,7 +86,7 @@ class UI(QMainWindow):
         combined_layout.addLayout(texts_layout)
 
         # Выбор алфавита
-        self.lbl_analyze_alphabet = QLabel("Выберите алфавит для анализа:")
+        self.lbl_analyze_alphabet = QLabel("Выберите используемый алфавит:")
         combined_layout.addWidget(self.lbl_analyze_alphabet)
 
         # Создаем контейнер для радиокнопок
@@ -129,10 +129,16 @@ class UI(QMainWindow):
 
     # Открытие текстовых файлов и отображение их содержимого
     def rb_handle_alphabet_change(self):
-        if self.sa1.file_path != "":
-            self.show_fileQTextEdit(self.sa1.file_path, 1)
-        if self.sa2.file_path != "":
-            self.show_fileQTextEdit(self.sa2.file_path, 2)
+        new_alphabet = self.radio_group.checkedButton().alphabet
+        if (self.sa1.alphabet_name != new_alphabet or self.sa2.alphabet_name != new_alphabet):
+            old_file_path_1 = self.sa1.file_path
+            old_file_path_2 = self.sa2.file_path
+            self.sa1.clear_text_data()
+            self.sa2.clear_text_data()
+            self.sa1.set_alphabet(self.radio_group.checkedButton().alphabet)
+            self.sa2.set_alphabet(self.radio_group.checkedButton().alphabet)
+            self.show_fileQTextEdit(old_file_path_1, 1)
+            self.show_fileQTextEdit(old_file_path_2, 2)
 
     def open_text_file(self, file_num):
         sa = self.sa1 if file_num == 1 else self.sa2
@@ -144,26 +150,25 @@ class UI(QMainWindow):
             sa.clear_text_data()
             text_edit.setText("")
             button.setText("Открыть файл")
-            return
-
-        # Открываем диалог выбора файла
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "Open Text File", "", "Text Files (*.txt);;All Files (*)")
-        if file_path:
-            sa.file_path = file_path
-            self.show_fileQTextEdit(file_path, file_num)
-            button.setText("Очистить файл")
+        else:
+            # Открываем диалог выбора файла
+            file_path, _ = QFileDialog.getOpenFileName(
+                self, "Open Text File", "", "Text Files (*.txt);;All Files (*)")
+            if file_path:
+                sa.file_path = file_path
+                self.show_fileQTextEdit(file_path, file_num)
+                button.setText("Очистить файл")
 
     # Отображение содержимого файла
     def show_fileQTextEdit(self, file_path, QTextEdit_num):
+        if file_path == "":
+            return
         target_edit = self.text_edit1 if QTextEdit_num == 1 else self.text_edit2
         other_edit = self.text_edit2 if QTextEdit_num == 1 else self.text_edit1
         target_sa = self.sa1 if QTextEdit_num == 1 else self.sa2
         other_sa = self.sa2 if QTextEdit_num == 1 else self.sa1
 
         # Загружаем текст
-        self.sa1.set_alphabet(self.radio_group.checkedButton().alphabet)
-        self.sa2.set_alphabet(self.radio_group.checkedButton().alphabet)
         trimmed_to_max_len = target_sa.process_text_forms(
             file_path,  other_sa.text_len)
         # Отображаем его
@@ -171,14 +176,15 @@ class UI(QMainWindow):
 
         # Если текст был укорочен, сообщаем об этом
         if trimmed_to_max_len:
-            self.show_msg_box_text_was_stripped(QTextEdit_num)
-
-        if target_sa.text_len < other_sa.text_len:
+            self.show_msg_box_text_was_trimmed(QTextEdit_num)
+        elif other_sa.text_len > target_sa.text_len:
             other_sa.text_in_alphabet = other_sa.text_in_alphabet[:target_sa.text_len]
             other_edit.setText(''.join(other_sa.text_in_alphabet))
-            self.show_msg_box_text_was_stripped(2 if QTextEdit_num == 1 else 1)
+            self.show_msg_box_text_was_trimmed(2 if QTextEdit_num == 1 else 1)
 
-    def show_msg_box_text_was_stripped(self, num):
+    def show_msg_box_text_was_trimmed(self, num=-1):
+        if num == -1:
+            return
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Warning)
         msg.setWindowTitle("Предупреждение")
@@ -194,7 +200,7 @@ class UI(QMainWindow):
         msg.exec_()
 
     def start_analyze(self):
-        # Удаляем старые результаты анализа, если
+        # Удаляем старые результаты анализа, если он производился
         widget = self.stacked_widget.widget(1)
         if widget:
             self.stacked_widget.removeWidget(widget)

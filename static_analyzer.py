@@ -9,6 +9,7 @@ class StaticAnalyzer:
         self.alphabet_number = 0
         self.alphabet_len = 35  # 34 +1
         self.alphabet = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя "
+        self.alphabet_name = "rus_34"
         self.file_path = ""
         self.text_len = -1  # текс не был загружен
         self.text = []
@@ -66,7 +67,10 @@ class StaticAnalyzer:
                     self.text_in_alphabet.append(char)
                     self.text_in_numbers.append(self.alphabet.find(char)+1)
                     self.text_len += 1
-            trimmed_to_max_len = bool(f.read(1))
+            # если остался нерпочитанный символ и он пренадлежит алфавиту
+            # то мы сообщим о том, что текст был урезан
+            char = f.read(1)
+            trimmed_to_max_len = bool(char in self.alphabet and char != "")
         self.text_in_numbers.append(0)  # конец файла
         return trimmed_to_max_len
 
