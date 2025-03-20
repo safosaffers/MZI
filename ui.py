@@ -297,16 +297,14 @@ class UI(QMainWindow):
 
         # Первая страница (Таблицы для A)
         page1 = QWidget()
-        layout1 = QVBoxLayout()
-        layout1.addWidget(QLabel("Таблицы для текста A"))
-        self.add_tables_to_layout(layout1, self.sa1)
+        layout1 = QGridLayout()
+        self.add_tables_to_layout(layout1, self.sa1, "Таблицы для текста A")
         page1.setLayout(layout1)
 
         # Вторая страница (Таблицы для B)
         page2 = QWidget()
-        layout2 = QVBoxLayout()
-        layout2.addWidget(QLabel("Таблицы для текста B"))
-        self.add_tables_to_layout(layout2, self.sa2)
+        layout2 = QGridLayout()
+        self.add_tables_to_layout(layout2, self.sa2, "Таблицы для текста B")
         page2.setLayout(layout2)
 
         # Добавляем страницы в стек
@@ -331,20 +329,23 @@ class UI(QMainWindow):
 
         return container
 
-    def add_tables_to_layout(self, layout, sa):
+    def add_tables_to_layout(self, layout, sa, title):
+        layout.addWidget(QLabel(title), 0, 0)
         # Функция для создания таблицы
+
         def create_table(data, title, alphabet=None, max_row_elems=9, max_col_elems=9):
             alp_len = len(alphabet)
             row_parts_count = (alp_len+max_row_elems-1)//max_row_elems
             col_parts_count = (alp_len+max_col_elems-1)//max_col_elems
-            table_part = [[QTableWidget() for i in range(col_parts_count)]
-                          for j in range(row_parts_count)]
+            table_parts = [[QTableWidget() for i in range(col_parts_count)]
+                           for j in range(row_parts_count)]
             for i in range(row_parts_count):
                 for j in range(col_parts_count):
-                    table_part[i][j].setRowCount(max_row_elems)
-                    table_part[i][j].setColumnCount(max_col_elems)
-                    table_part[i][j].verticalHeader().setDefaultSectionSize(30)
-                    table_part[i][j].horizontalHeader(
+                    table_parts[i][j].setRowCount(max_row_elems)
+                    table_parts[i][j].setColumnCount(max_col_elems)
+                    table_parts[i][j].verticalHeader(
+                    ).setDefaultSectionSize(30)
+                    table_parts[i][j].horizontalHeader(
                     ).setDefaultSectionSize(30)
                     k_begin = i*max_row_elems
                     k_end = (i*max_row_elems+max_row_elems)
@@ -355,42 +356,67 @@ class UI(QMainWindow):
                     for k in range(k_begin, k_end):
                         for l in range(l_begin, l_end):
                             elem = QTableWidgetItem(str(round(data[k][l], 3)))
-                            table_part[i][j].setItem(
+                            table_parts[i][j].setItem(
                                 k-k_begin, l-l_begin, elem)
-                    table_part[i][j].setHorizontalHeaderLabels(
+                    table_parts[i][j].setHorizontalHeaderLabels(
                         list(alphabet[l_begin:l_end]))
-                    table_part[i][j].setVerticalHeaderLabels(
+                    table_parts[i][j].setVerticalHeaderLabels(
                         list(alphabet[k_begin:k_end]))
+            return table_parts, [row_parts_count, col_parts_count], [0, 0]
 
-            layout.addWidget(table_part[0][1])
+        def change_table_view(table, sizes, curr, destination):
+            layout.removeWidget(table[curr[0]][curr[1]])
+            if destination == "left":
+                curr[1] -= 1
+            elif destination == "right":
+                curr[1] += 1
+            elif destination == "up":
+                curr[0] += 1
+            elif destination == "down":
+                curr[0] -= 1
+            curr[0] = 0 if curr[0] < 0 else (
+                sizes[0] if sizes[0] < curr[0] else curr[0])
+            curr[1] = 0 if curr[1] < 0 else (
+                sizes[1] if sizes[1] < curr[1] else curr[1])
+            layout.addWidget(table[curr[0]][curr[1]], 1, 0)
 
-            btns_container = QWidget()
-            btns_layout = QGridLayout()
-            btns_layout.setHorizontalSpacing(5)
-            btns_container.setLayout(btns_layout)
-            btn_left = QPushButton("←")
-            btn_left.setFixedSize(40, 40)
-            btn_right = QPushButton("→")
-            btn_right.setFixedSize(40, 40)
-            btn_up = QPushButton("↑")
-            btn_up.setFixedSize(40, 40)
-            btn_down = QPushButton("↓")
-            btn_down.setFixedSize(40, 40)
-            btns_layout.addWidget(btn_left, 0, 0, alignment=Qt.AlignRight)
-            btns_layout.addWidget(btn_right, 0, 1, alignment=Qt.AlignLeft)
-            btns_layout.addWidget(btn_up, 1, 0, alignment=Qt.AlignRight)
-            btns_layout.addWidget(btn_down, 1, 1, alignment=Qt.AlignLeft)
-            layout.addWidget(btns_container)
-
-        sa.alphabet
         # Добавляем таблицы с использованием алфавита
         new_alphabet = "Ø" + sa.alphabet[:-1]+"_"
         # create_table(sa.probabilities,
         #              "Безусловные вероятности: P(a_i)", new_alphabet)
         # create_table(sa.joint_probabilities,
         #              "Совместные вероятности: P(a_{i}|a_{i+1})", new_alphabet)
-        create_table(sa.condi_probabilities,
-                     "Условные вероятности: P(a_{i}|a_{i-1})", new_alphabet)
+##
+        self.table_3, self.sizes_table_3, self.current_table_3 = create_table(sa.condi_probabilities,
+                                                                              "Условные вероятности: P(a_{i}|a_{i-1})", new_alphabet)
+        # начальная выбранная часть таблицы
+        layout.addWidget(self.table_3[0][0], 1, 0)
+        btns_container = QWidget()
+        btns_layout = QGridLayout()
+        btns_layout.setHorizontalSpacing(5)
+        btns_container.setLayout(btns_layout)
+        btn_left = QPushButton("←")
+        btn_left.setFixedSize(40, 40)
+        btn_right = QPushButton("→")
+        btn_right.setFixedSize(40, 40)
+        btn_up = QPushButton("↑")
+        btn_up.setFixedSize(40, 40)
+        btn_down = QPushButton("↓")
+        btn_down.setFixedSize(40, 40)
+        btns_layout.addWidget(btn_left, 0, 0, alignment=Qt.AlignRight)
+        btns_layout.addWidget(btn_right, 0, 1, alignment=Qt.AlignLeft)
+        btns_layout.addWidget(btn_up, 1, 0, alignment=Qt.AlignRight)
+        btns_layout.addWidget(btn_down, 1, 1, alignment=Qt.AlignLeft)
+        btn_left.clicked.connect(lambda: change_table_view(
+            self.table_3, self.sizes_table_3, self.current_table_3, "left"))
+        btn_right.clicked.connect(lambda: change_table_view(
+            self.table_3, self.sizes_table_3, self.current_table_3, "right"))
+        btn_up.clicked.connect(lambda: change_table_view(
+            self.table_3, self.sizes_table_3, self.current_table_3, "up"))
+        btn_down.clicked.connect(lambda: change_table_view(
+            self.table_3, self.sizes_table_3, self.current_table_3, "down"))
+        layout.addWidget(btns_container, 2, 0)
+##
 
     def histograms_page(self):
         # Создаем стек для гистограмм
