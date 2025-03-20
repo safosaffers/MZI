@@ -17,7 +17,7 @@ class UI(QMainWindow):
         self.sa1 = StaticAnalyzer()  # Для первого текста
         self.sa2 = StaticAnalyzer()  # Для второго текста
         self.setWindowTitle("Анализатор текста")
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 900, 700)
         self.show()
 
         # Центральный виджет
@@ -223,7 +223,7 @@ class UI(QMainWindow):
         main_analyze_layout = QVBoxLayout()
         main_analyze_container.setLayout(main_analyze_layout)
 
-        # Добавляем кнопки переключения между
+        # Добавляем кнопки переключения
         btns_container = QWidget()
         button_layout = QHBoxLayout()
         btns_container.setLayout(button_layout)
@@ -332,43 +332,44 @@ class UI(QMainWindow):
 
     def add_tables_to_layout(self, layout, sa):
         # Функция для создания таблицы
-        def create_table(data, title, alphabet=None):
-            table = QTableWidget()
-            table.setRowCount(len(data))
-            table.setColumnCount(
-                len(data[0]) if isinstance(data[0], list) else 1)
+        def create_table(data, title, alphabet=None, max_row_elems=9, max_col_elems=9):
+            alp_len = len(alphabet)
+            row_parts_count = (alp_len+max_row_elems-1)//max_row_elems
+            col_parts_count = (alp_len+max_col_elems-1)//max_col_elems
+            table_part = [[QTableWidget() for i in range(col_parts_count)]
+                          for j in range(row_parts_count)]
+            for i in range(row_parts_count):
+                for j in range(col_parts_count):
+                    table_part[i][j].setRowCount(max_row_elems)
+                    table_part[i][j].setColumnCount(max_col_elems)
+                    table_part[i][j].verticalHeader().setDefaultSectionSize(30)
+                    table_part[i][j].horizontalHeader(
+                    ).setDefaultSectionSize(30)
+                    k_begin = i*max_row_elems
+                    k_end = (i*max_row_elems+max_row_elems)
+                    k_end = k_end if k_end <= alp_len else alp_len
+                    l_begin = j*max_col_elems
+                    l_end = (j*max_col_elems+max_col_elems)
+                    l_end = l_end if l_end < alp_len else alp_len
+                    for k in range(k_begin, k_end):
+                        for l in range(l_begin, l_end):
+                            elem = QTableWidgetItem(str(round(data[k][l], 3)))
+                            table_part[i][j].setItem(
+                                k-k_begin, l-l_begin, elem)
+                    table_part[i][j].setHorizontalHeaderLabels(
+                        list(alphabet[l_begin:l_end]))
+                    table_part[i][j].setVerticalHeaderLabels(
+                        list(alphabet[k_begin:k_end]))
 
-            # Заполнение таблицы данными
-            for i in range(len(data)):
-                if isinstance(data[0], list):  # Для матриц
-                    for j in range(len(data[0])):
-                        table.setItem(i, j, QTableWidgetItem(
-                            str(round(data[i][j], 6))))
-                else:  # Для одномерных массивов
-                    table.setItem(i, 0, QTableWidgetItem(
-                        str(round(data[i], 6))))
+            layout.addWidget(table_part[0][0])
 
-            # Установка заголовков строк и столбцов
-            if alphabet:
-                if isinstance(data[0], list):  # Для матриц
-                    table.setVerticalHeaderLabels(
-                        [alphabet[i] for i in range(len(data))])
-                    table.setHorizontalHeaderLabels(
-                        [alphabet[j] for j in range(len(data[0]))])
-                else:  # Для одномерных массивов
-                    table.setVerticalHeaderLabels(
-                        [alphabet[i] for i in range(len(data))])
-
-            label = QLabel(title)
-            layout.addWidget(label)
-            layout.addWidget(table)
         sa.alphabet
         # Добавляем таблицы с использованием алфавита
         new_alphabet = "Ø" + sa.alphabet[:-1]+"_"
-        create_table(sa.probabilities,
-                     "Безусловные вероятности: P(a_i)", new_alphabet)
-        create_table(sa.joint_probabilities,
-                     "Совместные вероятности: P(a_{i}|a_{i+1})", new_alphabet)
+        # create_table(sa.probabilities,
+        #              "Безусловные вероятности: P(a_i)", new_alphabet)
+        # create_table(sa.joint_probabilities,
+        #              "Совместные вероятности: P(a_{i}|a_{i+1})", new_alphabet)
         create_table(sa.condi_probabilities,
                      "Условные вероятности: P(a_{i}|a_{i-1})", new_alphabet)
 
