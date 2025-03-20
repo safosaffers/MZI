@@ -7,6 +7,7 @@
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
+from PyQt5.QtCore import *
 import pyqtgraph as pg
 from static_analyzer import StaticAnalyzer  # import backend
 
@@ -361,7 +362,25 @@ class UI(QMainWindow):
                     table_part[i][j].setVerticalHeaderLabels(
                         list(alphabet[k_begin:k_end]))
 
-            layout.addWidget(table_part[0][0])
+            layout.addWidget(table_part[0][1])
+
+            btns_container = QWidget()
+            btns_layout = QGridLayout()
+            btns_layout.setHorizontalSpacing(5)
+            btns_container.setLayout(btns_layout)
+            btn_left = QPushButton("←")
+            btn_left.setFixedSize(40, 40)
+            btn_right = QPushButton("→")
+            btn_right.setFixedSize(40, 40)
+            btn_up = QPushButton("↑")
+            btn_up.setFixedSize(40, 40)
+            btn_down = QPushButton("↓")
+            btn_down.setFixedSize(40, 40)
+            btns_layout.addWidget(btn_left, 0, 0, alignment=Qt.AlignRight)
+            btns_layout.addWidget(btn_right, 0, 1, alignment=Qt.AlignLeft)
+            btns_layout.addWidget(btn_up, 1, 0, alignment=Qt.AlignRight)
+            btns_layout.addWidget(btn_down, 1, 1, alignment=Qt.AlignLeft)
+            layout.addWidget(btns_container)
 
         sa.alphabet
         # Добавляем таблицы с использованием алфавита
