@@ -203,11 +203,16 @@ class UI(QMainWindow):
 
     def start_analyze(self):
         # Выполняем анализ
-        self.sa1.single_text_analyze()
-        self.sa2.single_text_analyze()
+        if self.sa1.file_path == "" and self.sa2.file_path == "":
+            self.show_msg_box_file_not_chosen()
+        else:
+            if self.sa1.file_path != "":
+                self.sa1.single_text_analyze()
+            if self.sa2.file_path != "":
+                self.sa2.single_text_analyze()
 
-        # Страница выбора файлов для анализа
-        self.analyze_results_page()
+            # Страница выбора файлов для анализа
+            self.analyze_results_page()
 
     def analyze_results_page(self):
         # Удаляем старые результаты анализа, если он производился
@@ -215,9 +220,6 @@ class UI(QMainWindow):
         if widget:
             self.stacked_widget.removeWidget(widget)
             widget.deleteLater()
-        if self.sa1.file_path == "" and self.sa2.file_path == "":
-            self.show_msg_box_file_not_chosen()
-            return
         self.analyze_result.setEnabled(True)
 
         main_analyze_container = QWidget()
@@ -292,38 +294,42 @@ class UI(QMainWindow):
         return container
 
     def probabilities_tables_page(self):
+        # Общий контейнер
+        container = QWidget()
+        layout = QVBoxLayout()
+
         # Создаем стек для таблиц
         stacked_widget = QStackedWidget()
 
         # Первая страница (Таблицы для A)
-        page1 = QWidget()
-        layout1 = QGridLayout()
-        self.add_tables_to_layout(layout1, self.sa1, "Таблицы для текста A")
-        page1.setLayout(layout1)
+        if self.sa1.file_path != "":
+            page1 = QWidget()
+            layout1 = QGridLayout()
+            self.add_tables_to_layout(
+                layout1, self.sa1, "Таблицы для текста A")
+            page1.setLayout(layout1)
+            stacked_widget.addWidget(page1)
 
         # Вторая страница (Таблицы для B)
-        page2 = QWidget()
-        layout2 = QGridLayout()
-        self.add_tables_to_layout(layout2, self.sa2, "Таблицы для текста B")
-        page2.setLayout(layout2)
-
-        # Добавляем страницы в стек
-        stacked_widget.addWidget(page1)
-        stacked_widget.addWidget(page2)
+        if self.sa2.file_path != "":
+            page2 = QWidget()
+            layout2 = QGridLayout()
+            self.add_tables_to_layout(
+                layout2, self.sa2, "Таблицы для текста B")
+            page2.setLayout(layout2)
+            stacked_widget.addWidget(page2)
 
         # Добавляем кнопки переключения
-        button_layout = QHBoxLayout()
-        btn1 = QPushButton("Таблицы A")
-        btn2 = QPushButton("Таблицы B")
-        btn1.clicked.connect(lambda: stacked_widget.setCurrentIndex(0))
-        btn2.clicked.connect(lambda: stacked_widget.setCurrentIndex(1))
-        button_layout.addWidget(btn1)
-        button_layout.addWidget(btn2)
+        if self.sa2.file_path != "" and self.sa2.file_path != "":
+            button_layout = QHBoxLayout()
+            btn1 = QPushButton("Таблицы A")
+            btn2 = QPushButton("Таблицы B")
+            btn1.clicked.connect(lambda: stacked_widget.setCurrentIndex(0))
+            btn2.clicked.connect(lambda: stacked_widget.setCurrentIndex(1))
+            button_layout.addWidget(btn1)
+            button_layout.addWidget(btn2)
+            layout.addLayout(button_layout)
 
-        # Общий контейнер
-        container = QWidget()
-        layout = QVBoxLayout()
-        layout.addLayout(button_layout)
         layout.addWidget(stacked_widget)
         container.setLayout(layout)
 
@@ -334,6 +340,7 @@ class UI(QMainWindow):
         # Функция для создания таблицы
 
         def create_table(data, title, alphabet=None, max_row_elems=9, max_col_elems=9):
+            result = QStackedWidget()
             alp_len = len(alphabet)
             row_parts_count = (alp_len+max_row_elems-1)//max_row_elems
             col_parts_count = (alp_len+max_col_elems-1)//max_col_elems
@@ -362,35 +369,44 @@ class UI(QMainWindow):
                         list(alphabet[l_begin:l_end]))
                     table_parts[i][j].setVerticalHeaderLabels(
                         list(alphabet[k_begin:k_end]))
-            return table_parts, [row_parts_count, col_parts_count], [0, 0]
+                    result.addWidget(table_parts[i][j])
+            return result, [row_parts_count, col_parts_count], [0, 0]
 
         def change_table_view(table, sizes, curr, destination):
-            layout.removeWidget(table[curr[0]][curr[1]])
-            if destination == "left":
-                curr[1] -= 1
-            elif destination == "right":
-                curr[1] += 1
-            elif destination == "up":
-                curr[0] += 1
-            elif destination == "down":
-                curr[0] -= 1
-            curr[0] = 0 if curr[0] < 0 else (
-                sizes[0] if sizes[0] < curr[0] else curr[0])
-            curr[1] = 0 if curr[1] < 0 else (
-                sizes[1] if sizes[1] < curr[1] else curr[1])
-            layout.addWidget(table[curr[0]][curr[1]], 1, 0)
+            self.table_3_stacked_widget.setCurrentIndex(1)
+            # table[curr[0]][curr[1]].setParent(None)
+            # # layout.removeWidget(table[curr[0]][curr[1]])
+            # if destination == "left":
+            #     curr[1] -= 1
+            # elif destination == "right":
+            #     curr[1] += 1
+            # elif destination == "up":
+            #     curr[0] += 1
+            # elif destination == "down":
+            #     curr[0] -= 1
+            # curr[0] = 0 if curr[0] < 0 else (
+            #     sizes[0] if sizes[0] < curr[0] else curr[0])
+            # curr[1] = 0 if curr[1] < 0 else (
+            #     sizes[1] if sizes[1] < curr[1] else curr[1])
+            # # layout.addWidget(table[curr[0]][curr[1]], 1, 0)
+            # table[curr[0]][curr[1]].setParent(layout)
 
-        # Добавляем таблицы с использованием алфавита
+            # Добавляем таблицы с использованием алфавита
         new_alphabet = "Ø" + sa.alphabet[:-1]+"_"
         # create_table(sa.probabilities,
         #              "Безусловные вероятности: P(a_i)", new_alphabet)
         # create_table(sa.joint_probabilities,
         #              "Совместные вероятности: P(a_{i}|a_{i+1})", new_alphabet)
 ##
-        self.table_3, self.sizes_table_3, self.current_table_3 = create_table(sa.condi_probabilities,
-                                                                              "Условные вероятности: P(a_{i}|a_{i-1})", new_alphabet)
+        self.table_3_stacked_widget, self.sizes_table_3, self.current_table_3 = create_table(sa.condi_probabilities,
+                                                                                             "Условные вероятности: P(a_{i}|a_{i-1})", new_alphabet)
         # начальная выбранная часть таблицы
-        layout.addWidget(self.table_3[0][0], 1, 0)
+        print("всего страниц:", self.table_3_stacked_widget.count())
+        print("текущий индекс:", self.table_3_stacked_widget.currentIndex())
+        print("текущий виджет:", self.table_3_stacked_widget.currentWidget())
+
+        layout.addWidget(self.table_3_stacked_widget)
+        self.table_3_stacked_widget.setCurrentIndex(0)
         btns_container = QWidget()
         btns_layout = QGridLayout()
         btns_layout.setHorizontalSpacing(5)
@@ -408,56 +424,57 @@ class UI(QMainWindow):
         btns_layout.addWidget(btn_up, 1, 0, alignment=Qt.AlignRight)
         btns_layout.addWidget(btn_down, 1, 1, alignment=Qt.AlignLeft)
         btn_left.clicked.connect(lambda: change_table_view(
-            self.table_3, self.sizes_table_3, self.current_table_3, "left"))
+            self.table_3_stacked_widget, self.sizes_table_3, self.current_table_3, "left"))
         btn_right.clicked.connect(lambda: change_table_view(
-            self.table_3, self.sizes_table_3, self.current_table_3, "right"))
+            self.table_3_stacked_widget, self.sizes_table_3, self.current_table_3, "right"))
         btn_up.clicked.connect(lambda: change_table_view(
-            self.table_3, self.sizes_table_3, self.current_table_3, "up"))
+            self.table_3_stacked_widget, self.sizes_table_3, self.current_table_3, "up"))
         btn_down.clicked.connect(lambda: change_table_view(
-            self.table_3, self.sizes_table_3, self.current_table_3, "down"))
+            self.table_3_stacked_widget, self.sizes_table_3, self.current_table_3, "down"))
         layout.addWidget(btns_container, 2, 0)
 ##
 
     def histograms_page(self):
+        # Общий контейнер
+        container = QWidget()
+        layout = QVBoxLayout()
+
         # Создаем стек для гистограмм
         stacked_widget = QStackedWidget()
 
         # Первая страница (Гистограмма A)
-        page1 = QWidget()
-        layout1 = QVBoxLayout()
-        layout1.addWidget(
-            QLabel("Гистограмма встречаемости символов текста A"))
-        layout1.addWidget(self.create_histogram(self.sa1))
-        page1.setLayout(layout1)
+        if self.sa1.file_path != "":
+            page1 = QWidget()
+            layout1 = QVBoxLayout()
+            layout1.addWidget(
+                QLabel("Гистограмма встречаемости символов текста A"))
+            layout1.addWidget(self.create_histogram(self.sa1))
+            page1.setLayout(layout1)
+            stacked_widget.addWidget(page1)
 
         # Вторая страница (Гистограмма B)
-        page2 = QWidget()
-        layout2 = QVBoxLayout()
-        layout2.addWidget(
-            QLabel("Гистограмма встречаемости символов текста B"))
-        layout2.addWidget(self.create_histogram(self.sa2))
-        page2.setLayout(layout2)
-
-        # Добавляем страницы в стек
-        stacked_widget.addWidget(page1)
-        stacked_widget.addWidget(page2)
+        if self.sa2.file_path != "":
+            page2 = QWidget()
+            layout2 = QVBoxLayout()
+            layout2.addWidget(
+                QLabel("Гистограмма встречаемости символов текста B"))
+            layout2.addWidget(self.create_histogram(self.sa2))
+            page2.setLayout(layout2)
+            stacked_widget.addWidget(page2)
 
         # Добавляем кнопки переключения
-        button_layout = QHBoxLayout()
-        btn1 = QPushButton("Гистограмма A")
-        btn2 = QPushButton("Гистограмма B")
-        btn1.clicked.connect(lambda: stacked_widget.setCurrentIndex(0))
-        btn2.clicked.connect(lambda: stacked_widget.setCurrentIndex(1))
-        button_layout.addWidget(btn1)
-        button_layout.addWidget(btn2)
+        if self.sa1.file_path != "" and self.sa2.file_path != "":
+            button_layout = QHBoxLayout()
+            btn1 = QPushButton("Гистограмма A")
+            btn2 = QPushButton("Гистограмма B")
+            btn1.clicked.connect(lambda: stacked_widget.setCurrentIndex(0))
+            btn2.clicked.connect(lambda: stacked_widget.setCurrentIndex(1))
+            button_layout.addWidget(btn1)
+            button_layout.addWidget(btn2)
+            layout.addLayout(button_layout)
 
-        # Общий контейнер
-        container = QWidget()
-        layout = QVBoxLayout()
-        layout.addLayout(button_layout)
         layout.addWidget(stacked_widget)
         container.setLayout(layout)
-
         return container
 
     def create_histogram(self, current_sa):
