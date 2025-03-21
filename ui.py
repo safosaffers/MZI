@@ -301,7 +301,7 @@ class UI(QMainWindow):
         # Создаем стек для таблиц
         stacked_widget = QStackedWidget()
 
-        # Первая страница (Таблицы для A)
+        # Первая страница: вероятности встречаемости символов А и В
         if self.sa1.file_path != "":
             page1 = QWidget()
             layout1 = QGridLayout()
@@ -337,97 +337,74 @@ class UI(QMainWindow):
 
     def add_tables_to_layout(self, layout, sa, title):
         layout.addWidget(QLabel(title), 0, 0)
-        # Функция для создания таблицы
 
-        def create_table(data, title, alphabet=None, max_row_elems=9, max_col_elems=9):
+        def create_table(data, alphabet, max_row_elems=9, max_col_elems=9):
             result = QStackedWidget()
             alp_len = len(alphabet)
-            row_parts_count = (alp_len+max_row_elems-1)//max_row_elems
-            col_parts_count = (alp_len+max_col_elems-1)//max_col_elems
-            table_parts = [[QTableWidget() for i in range(col_parts_count)]
-                           for j in range(row_parts_count)]
-            for i in range(row_parts_count):
-                for j in range(col_parts_count):
-                    table_parts[i][j].setRowCount(max_row_elems)
-                    table_parts[i][j].setColumnCount(max_col_elems)
-                    table_parts[i][j].verticalHeader(
-                    ).setDefaultSectionSize(30)
-                    table_parts[i][j].horizontalHeader(
-                    ).setDefaultSectionSize(30)
-                    k_begin = i*max_row_elems
-                    k_end = (i*max_row_elems+max_row_elems)
-                    k_end = k_end if k_end <= alp_len else alp_len
-                    l_begin = j*max_col_elems
-                    l_end = (j*max_col_elems+max_col_elems)
-                    l_end = l_end if l_end < alp_len else alp_len
-                    for k in range(k_begin, k_end):
-                        for l in range(l_begin, l_end):
-                            elem = QTableWidgetItem(str(round(data[k][l], 3)))
-                            table_parts[i][j].setItem(
-                                k-k_begin, l-l_begin, elem)
-                    table_parts[i][j].setHorizontalHeaderLabels(
-                        list(alphabet[l_begin:l_end]))
-                    table_parts[i][j].setVerticalHeaderLabels(
-                        list(alphabet[k_begin:k_end]))
-                    result.addWidget(table_parts[i][j])
-            return result, [row_parts_count, col_parts_count], [0, 0]
+            row_parts = (alp_len + max_row_elems - 1) // max_row_elems
+            col_parts = (alp_len + max_col_elems - 1) // max_col_elems
+            table_parts = [[QTableWidget() for _ in range(col_parts)]
+                           for _ in range(row_parts)]
 
-        def change_table_view(table, sizes, curr, destination):
-            if destination == "left":
+            for i in range(row_parts):
+                for j in range(col_parts):
+                    table = table_parts[i][j]
+                    table.setRowCount(max_row_elems)
+                    table.setColumnCount(max_col_elems)
+                    table.verticalHeader().setDefaultSectionSize(30)
+                    table.horizontalHeader().setDefaultSectionSize(30)
+
+                    row_start, row_end = i * \
+                        max_row_elems, min((i + 1) * max_row_elems, alp_len)
+                    col_start, col_end = j * \
+                        max_col_elems, min((j + 1) * max_col_elems, alp_len)
+
+                    for k in range(row_start, row_end):
+                        for l in range(col_start, col_end):
+                            table.setItem(k - row_start, l - col_start,
+                                          QTableWidgetItem(str(round(data[k][l], 3))))
+
+                    table.setHorizontalHeaderLabels(
+                        list(alphabet[col_start:col_end]))
+                    table.setVerticalHeaderLabels(
+                        list(alphabet[row_start:row_end]))
+                    result.addWidget(table)
+
+            return result, [row_parts, col_parts], [0, 0]
+
+        def change_table_view(table, sizes, curr, direction):
+            if direction == "left":
                 curr[1] -= 1
-            elif destination == "right":
+            elif direction == "right":
                 curr[1] += 1
-            elif destination == "up":
+            elif direction == "up":
                 curr[0] -= 1
-            elif destination == "down":
+            elif direction == "down":
                 curr[0] += 1
-            curr[0] = 0 if curr[0] < 0 else ((sizes[0]-1)
-                                             if sizes[0] <= curr[0] else curr[0])
-            curr[1] = 0 if curr[1] < 0 else ((sizes[1]-1)
-                                             if sizes[1] <= curr[1] else curr[1])
-            new_idx = curr[0]*sizes[1]+curr[1]
-            self.table_3_stacked_widget.setCurrentIndex(new_idx)
 
-            # Добавляем таблицы с использованием алфавита
-        new_alphabet = "Ø" + sa.alphabet[:-1]+"_"
-        # create_table(sa.probabilities,
-        #              "Безусловные вероятности: P(a_i)", new_alphabet)
-        # create_table(sa.joint_probabilities,
-        #              "Совместные вероятности: P(a_{i}|a_{i+1})", new_alphabet)
-##
-        self.table_3_stacked_widget, self.sizes_table_3, self.current_table_3 = create_table(sa.condi_probabilities,
-                                                                                             "Условные вероятности: P(a_{i}|a_{i-1})", new_alphabet)
-        # начальная выбранная часть таблицы
-        print("всего страниц:", self.table_3_stacked_widget.count())
-        print("текущий индекс:", self.table_3_stacked_widget.currentIndex())
-        print("текущий виджет:", self.table_3_stacked_widget.currentWidget())
+            curr[0] = max(0, min(curr[0], sizes[0] - 1))
+            curr[1] = max(0, min(curr[1], sizes[1] - 1))
+            table.setCurrentIndex(curr[0] * sizes[1] + curr[1])
+
+        new_alphabet = "Ø" + sa.alphabet[:-1] + "_"
+        self.table_3_stacked_widget, self.sizes_table_3, self.current_table_3 = create_table(
+            sa.condi_probabilities, new_alphabet)
 
         layout.addWidget(self.table_3_stacked_widget)
         self.table_3_stacked_widget.setCurrentIndex(0)
+
         btns_container = QWidget()
         btns_layout = QGridLayout()
-        btns_layout.setHorizontalSpacing(5)
         btns_container.setLayout(btns_layout)
-        btn_left = QPushButton("←")
-        btn_left.setFixedSize(40, 40)
-        btn_right = QPushButton("→")
-        btn_right.setFixedSize(40, 40)
-        btn_up = QPushButton("↑")
-        btn_up.setFixedSize(40, 40)
-        btn_down = QPushButton("↓")
-        btn_down.setFixedSize(40, 40)
-        btns_layout.addWidget(btn_left, 0, 0, alignment=Qt.AlignRight)
-        btns_layout.addWidget(btn_right, 0, 1, alignment=Qt.AlignLeft)
-        btns_layout.addWidget(btn_up, 1, 0, alignment=Qt.AlignRight)
-        btns_layout.addWidget(btn_down, 1, 1, alignment=Qt.AlignLeft)
-        btn_left.clicked.connect(lambda: change_table_view(
-            self.table_3_stacked_widget, self.sizes_table_3, self.current_table_3, "left"))
-        btn_right.clicked.connect(lambda: change_table_view(
-            self.table_3_stacked_widget, self.sizes_table_3, self.current_table_3, "right"))
-        btn_up.clicked.connect(lambda: change_table_view(
-            self.table_3_stacked_widget, self.sizes_table_3, self.current_table_3, "up"))
-        btn_down.clicked.connect(lambda: change_table_view(
-            self.table_3_stacked_widget, self.sizes_table_3, self.current_table_3, "down"))
+
+        directions = {"←": "left", "→": "right", "↑": "up", "↓": "down"}
+        for idx, (text, direction) in enumerate(directions.items()):
+            btn = QPushButton(text)
+            btn.setFixedSize(40, 40)
+            btn.clicked.connect(lambda _, d=direction: change_table_view(
+                self.table_3_stacked_widget, self.sizes_table_3, self.current_table_3, d))
+            btns_layout.addWidget(btn, idx // 2, idx % 2)
+
         layout.addWidget(btns_container, 2, 0)
 ##
 
