@@ -1,0 +1,44 @@
+QWidget
+{
+font: 11pt "Times New Roman";
+}
+QWidget#pageZero
+{
+	background-color:rgb(235,237,239);
+}
+ 
+QTabBar::tab
+{
+min-width:140;
+max-width:300;
+height:35;
+}
+ 
+QTabBar::tab:focus
+{
+outline:none;
+}
+ 
+QTabWidget:pane
+{ 
+background-color:rgb(255,255,255); 
+border: -1px solid ; 
+top:0px solid;
+} 
+QTabBar::tab:selected
+{
+margin-right: 5px rgb(235,237,239); 
+border-bottom: 5px solid rgb(255,255,255);
+background-color:rgb(255,255,255);
+}
+QTabBar::tab:!selected
+{
+margin-right: 5px rgb(235,237,239); 
+border-bottom: 5px solid rgb(235,237,239);
+background-color:rgb(223,225,227);
+}
+ 
+QTabBar::scroller {
+border: -1px solid ; 
+width:30;
+ }

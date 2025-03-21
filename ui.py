@@ -18,7 +18,7 @@ class UI(QMainWindow):
         self.sa1 = StaticAnalyzer()  # Для первого текста
         self.sa2 = StaticAnalyzer()  # Для второго текста
         self.setWindowTitle("Анализатор текста")
-        self.setGeometry(100, 100, 900, 700)
+        self.setGeometry(100, 100, 940, 700)
         self.show()
 
         # Центральный виджет
@@ -294,50 +294,78 @@ class UI(QMainWindow):
         return container
 
     def probabilities_tables_page(self):
-        # Общий контейнер
-        container = QWidget()
-        layout = QVBoxLayout()
+        # Общий контейнер - вкладки для таблиц
+        tab = QTabWidget()
+        with open("QTabWidget_styles.qss", "r") as f:
+            _style = f.read()
+            tab.setStyleSheet(_style)
 
-        # Создаем стек для таблиц
-        stacked_widget = QStackedWidget()
+        page_3_container = QWidget()
+        page_3_layout = QGridLayout()
+        page_3_container.setLayout(page_3_layout)
 
-        # Первая страница: вероятности встречаемости символов А и В
+        # Список для хранения таблиц (максимум 2)
+        tables = []
+
+        # Таблица усл. вер. для A
         if self.sa1.file_path != "":
-            page1 = QWidget()
-            layout1 = QGridLayout()
-            self.add_tables_to_layout(
-                layout1, self.sa1, "Таблицы для текста A")
-            page1.setLayout(layout1)
-            stacked_widget.addWidget(page1)
+            self.table_3A, self.sizes_table_3, self.current_table_3 = self.add_tables_to_layout(
+                self.sa1)
+            page_3_layout.addWidget(
+                QLabel("Условные вероятности текста A"), 0, 0, alignment=Qt.AlignTop | Qt.AlignCenter)
+            page_3_layout.addWidget(
+                self.table_3A, 1, 0, alignment=Qt.AlignCenter)
+            tables.append(self.table_3A)  # Добавляем таблицу в список
 
-        # Вторая страница (Таблицы для B)
+        # Таблица усл. вер. для B
         if self.sa2.file_path != "":
-            page2 = QWidget()
-            layout2 = QGridLayout()
-            self.add_tables_to_layout(
-                layout2, self.sa2, "Таблицы для текста B")
-            page2.setLayout(layout2)
-            stacked_widget.addWidget(page2)
+            self.table_3B, _, _ = self.add_tables_to_layout(self.sa2)
+            page_3_layout.addWidget(
+                QLabel("Условные вероятности текста B"), 0, 2, alignment=Qt.AlignTop | Qt.AlignCenter)
+            page_3_layout.addWidget(
+                self.table_3B, 1, 2, alignment=Qt.AlignCenter)
+            tables.append(self.table_3B)  # Добавляем таблицу в список
 
-        # Добавляем кнопки переключения
-        if self.sa2.file_path != "" and self.sa2.file_path != "":
-            button_layout = QHBoxLayout()
-            btn1 = QPushButton("Таблицы A")
-            btn2 = QPushButton("Таблицы B")
-            btn1.clicked.connect(lambda: stacked_widget.setCurrentIndex(0))
-            btn2.clicked.connect(lambda: stacked_widget.setCurrentIndex(1))
-            button_layout.addWidget(btn1)
-            button_layout.addWidget(btn2)
-            layout.addLayout(button_layout)
+        tab.addTab(page_3_container, "Условные вероятности")
 
-        layout.addWidget(stacked_widget)
-        container.setLayout(layout)
+        # Изменение текущего вида
+        def change_table_view(direction):
+            for table in tables:  # Перебираем все существующие таблицы
+                curr = self.current_table_3
+                sizes = self.sizes_table_3
 
-        return container
+                if direction == "left":
+                    curr[1] -= 1
+                elif direction == "right":
+                    curr[1] += 1
+                elif direction == "up":
+                    curr[0] -= 1
+                elif direction == "down":
+                    curr[0] += 1
 
-    def add_tables_to_layout(self, layout, sa, title):
-        layout.addWidget(QLabel(title), 0, 0)
+                curr[0] = max(0, min(curr[0], sizes[0] - 1))
+                curr[1] = max(0, min(curr[1], sizes[1] - 1))
+                table.setCurrentIndex(curr[0] * sizes[1] + curr[1])
 
+        # Добавляем кнопки для переключения
+        btns_container = QWidget()
+        btns_layout = QGridLayout()
+        btns_container.setLayout(btns_layout)
+        directions = {"←": "left", "→": "right", "↑": "up", "↓": "down"}
+        for idx, (text, direction) in enumerate(directions.items()):
+            btn = QPushButton(text)
+            btn.setFixedSize(40, 40)
+            btn.clicked.connect(lambda _, d=direction: change_table_view(d))
+            # Выравнивание кнопок
+            horizontal_alignment = Qt.AlignRight if idx % 2 == 0 else Qt.AlignLeft
+            vertical_alignment = Qt.AlignBottom if idx < 2 else Qt.AlignTop
+            alignment = horizontal_alignment | vertical_alignment
+            btns_layout.addWidget(btn, idx // 2, idx % 2, alignment=alignment)
+
+        page_3_layout.addWidget(btns_container, 1, 1)
+        return tab
+
+    def add_tables_to_layout(self, sa):  # , layout
         def create_table(data, alphabet, max_row_elems=9, max_col_elems=9):
             result = QStackedWidget()
             alp_len = len(alphabet)
@@ -352,8 +380,9 @@ class UI(QMainWindow):
                     table.setRowCount(max_row_elems)
                     table.setColumnCount(max_col_elems)
                     table.verticalHeader().setDefaultSectionSize(30)
-                    table.horizontalHeader().setDefaultSectionSize(30)
-
+                    table.horizontalHeader().setDefaultSectionSize(40)
+                    table.setFixedSize(
+                        max_col_elems*40+table.horizontalHeader().height(),  (max_row_elems+1)*30)
                     row_start, row_end = i * \
                         max_row_elems, min((i + 1) * max_row_elems, alp_len)
                     col_start, col_end = j * \
@@ -368,44 +397,22 @@ class UI(QMainWindow):
                         list(alphabet[col_start:col_end]))
                     table.setVerticalHeaderLabels(
                         list(alphabet[row_start:row_end]))
+                    # Запретить редактирование
+                    table.setEditTriggers(
+                        QAbstractItemView.NoEditTriggers)
                     result.addWidget(table)
 
             return result, [row_parts, col_parts], [0, 0]
 
-        def change_table_view(table, sizes, curr, direction):
-            if direction == "left":
-                curr[1] -= 1
-            elif direction == "right":
-                curr[1] += 1
-            elif direction == "up":
-                curr[0] -= 1
-            elif direction == "down":
-                curr[0] += 1
-
-            curr[0] = max(0, min(curr[0], sizes[0] - 1))
-            curr[1] = max(0, min(curr[1], sizes[1] - 1))
-            table.setCurrentIndex(curr[0] * sizes[1] + curr[1])
-
         new_alphabet = "Ø" + sa.alphabet[:-1] + "_"
-        self.table_3_stacked_widget, self.sizes_table_3, self.current_table_3 = create_table(
-            sa.condi_probabilities, new_alphabet)
+        table_stacked_widget, sizes_table_3, current_table_3 = create_table(
+            sa.condi_probabilities, new_alphabet)  # Удали self'ы
 
-        layout.addWidget(self.table_3_stacked_widget)
-        self.table_3_stacked_widget.setCurrentIndex(0)
+        # layout.addWidget(table_stacked_widget)
+        table_stacked_widget.setCurrentIndex(0)
 
-        btns_container = QWidget()
-        btns_layout = QGridLayout()
-        btns_container.setLayout(btns_layout)
+        return table_stacked_widget, sizes_table_3, current_table_3
 
-        directions = {"←": "left", "→": "right", "↑": "up", "↓": "down"}
-        for idx, (text, direction) in enumerate(directions.items()):
-            btn = QPushButton(text)
-            btn.setFixedSize(40, 40)
-            btn.clicked.connect(lambda _, d=direction: change_table_view(
-                self.table_3_stacked_widget, self.sizes_table_3, self.current_table_3, d))
-            btns_layout.addWidget(btn, idx // 2, idx % 2)
-
-        layout.addWidget(btns_container, 2, 0)
 ##
 
     def histograms_page(self):
