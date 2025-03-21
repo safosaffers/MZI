@@ -373,23 +373,20 @@ class UI(QMainWindow):
             return result, [row_parts_count, col_parts_count], [0, 0]
 
         def change_table_view(table, sizes, curr, destination):
-            self.table_3_stacked_widget.setCurrentIndex(1)
-            # table[curr[0]][curr[1]].setParent(None)
-            # # layout.removeWidget(table[curr[0]][curr[1]])
-            # if destination == "left":
-            #     curr[1] -= 1
-            # elif destination == "right":
-            #     curr[1] += 1
-            # elif destination == "up":
-            #     curr[0] += 1
-            # elif destination == "down":
-            #     curr[0] -= 1
-            # curr[0] = 0 if curr[0] < 0 else (
-            #     sizes[0] if sizes[0] < curr[0] else curr[0])
-            # curr[1] = 0 if curr[1] < 0 else (
-            #     sizes[1] if sizes[1] < curr[1] else curr[1])
-            # # layout.addWidget(table[curr[0]][curr[1]], 1, 0)
-            # table[curr[0]][curr[1]].setParent(layout)
+            if destination == "left":
+                curr[1] -= 1
+            elif destination == "right":
+                curr[1] += 1
+            elif destination == "up":
+                curr[0] -= 1
+            elif destination == "down":
+                curr[0] += 1
+            curr[0] = 0 if curr[0] < 0 else ((sizes[0]-1)
+                                             if sizes[0] <= curr[0] else curr[0])
+            curr[1] = 0 if curr[1] < 0 else ((sizes[1]-1)
+                                             if sizes[1] <= curr[1] else curr[1])
+            new_idx = curr[0]*sizes[1]+curr[1]
+            self.table_3_stacked_widget.setCurrentIndex(new_idx)
 
             # Добавляем таблицы с использованием алфавита
         new_alphabet = "Ø" + sa.alphabet[:-1]+"_"
