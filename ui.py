@@ -5,6 +5,7 @@
 """
 
 
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
@@ -248,7 +249,7 @@ class UI(QMainWindow):
         # – Информация о вычисленной энтропии:
         self.stats_container.addWidget(self.entropy_info_widget())
         # 2-я – Информация о вероятностях в текстах:
-        self.stats_container.addWidget(self.probabilities_tables_page())
+        self.stats_container.addWidget(self.prob_tables_page())
         # 3-я – Гистограмма частот символов текстов:
         self.stats_container.addWidget(self.histograms_page())
         # Добавляем контейнер в стек
@@ -293,118 +294,162 @@ class UI(QMainWindow):
                 QLabel(f"{self.sa2.joint_entropy_with(self.sa1):.4f}"), 3, 3)
         return container
 
-    def probabilities_tables_page(self):
+    def prob_tables_page(self):
+
         # Общий контейнер - вкладки для таблиц
         tab = QTabWidget()
         with open("QTabWidget_styles.qss", "r") as f:
             _style = f.read()
             tab.setStyleSheet(_style)
 
-        page_3_container = QWidget()
-        page_3_layout = QGridLayout()
-        page_3_container.setLayout(page_3_layout)
+        # Контейнеры страниц
+        # 1 страница — безусловные вероятности текстов
+        prob_container = QWidget()
+        prob_layout = QGridLayout()
+        prob_container.setLayout(prob_layout)
+        # 2 страница — совместные вероятности текстов
+        joint_prob_container = QWidget()
+        joint_prob_layout = QGridLayout()
+        joint_prob_container.setLayout(joint_prob_layout)
+        # 3 страница — условные вероятности текстов
+        condi_prob_container = QWidget()
+        condi_prob_layout = QGridLayout()
+        condi_prob_container.setLayout(condi_prob_layout)
 
-        # Список для хранения таблиц (максимум 2)
-        tables = []
+        # Все данные вероятностей по одному тексту A
+        if self.sa1.file_path:
+            labels = "Ø" + self.sa1.alphabet[:-1] + "_"
 
-        # Таблица усл. вер. для A
-        if self.sa1.file_path != "":
-            self.table_3A, self.sizes_table_3, self.current_table_3 = self.create_table_in_parts(
-                self.sa1.condi_probabilities, self.sa1.alphabet, max_row_elems=9, max_col_elems=9)
-            page_3_layout.addWidget(
-                QLabel("Условные вероятности текста A"), 0, 0, alignment=Qt.AlignTop | Qt.AlignCenter)
-            page_3_layout.addWidget(
-                self.table_3A, 1, 0, alignment=Qt.AlignCenter)
-            tables.append(self.table_3A)  # Добавляем таблицу в список
+            prob_layout.addWidget(
+                QLabel("Безусловные вероятности текста A"), 0, 0, alignment=Qt.AlignCenter)
+            prob_A = self.create_table_with_data(self.sa1.prob, labels)
+            prob_layout.addWidget(prob_A, 1, 0, alignment=Qt.AlignCenter)
 
-        # Таблица усл. вер. для B
-        if self.sa2.file_path != "":
-            self.table_3B, _, _ = self.create_table_in_parts(
-                self.sa2.condi_probabilities, self.sa2.alphabet, max_row_elems=9, max_col_elems=9)
-            page_3_layout.addWidget(
-                QLabel("Условные вероятности текста B"), 0, 2, alignment=Qt.AlignTop | Qt.AlignCenter)
-            page_3_layout.addWidget(
-                self.table_3B, 1, 2, alignment=Qt.AlignCenter)
-            tables.append(self.table_3B)  # Добавляем таблицу в список
+            joint_prob_layout.addWidget(
+                QLabel("Совместные вероятности текста A"), 0, 0, alignment=Qt.AlignCenter)
+            joint_prob_A = self.create_table_with_data(
+                self.sa1.joint_prob, labels)
+            joint_prob_layout.addWidget(
+                joint_prob_A, 1, 0, alignment=Qt.AlignCenter)
 
-        tab.addTab(page_3_container, "Условные вероятности")
+            condi_prob_layout.addWidget(
+                QLabel("Условные вероятности текста A"), 0, 0, alignment=Qt.AlignCenter)
+            condi_prob_A = self.create_table_with_data(
+                self.sa1.condi_prob, labels)
+            condi_prob_layout.addWidget(
+                condi_prob_A, 1, 0, alignment=Qt.AlignCenter)
 
-        # Изменение текущего вида
-        def change_table_view(direction):
-            for table in tables:  # Перебираем все существующие таблицы
-                curr = self.current_table_3
-                sizes = self.sizes_table_3
+        # Все данные вероятностей по одному тексту B
+        if self.sa2.file_path:
+            labels = "Ø" + self.sa2.alphabet[:-1] + "_"
 
-                if direction == "left":
-                    curr[1] -= 1
-                elif direction == "right":
-                    curr[1] += 1
-                elif direction == "up":
-                    curr[0] -= 1
-                elif direction == "down":
-                    curr[0] += 1
+            prob_layout.addWidget(
+                QLabel("Безусловные вероятности текста B"), 0, 1, alignment=Qt.AlignCenter)
+            prob_B = self.create_table_with_data(self.sa2.prob, labels)
+            prob_layout.addWidget(prob_B, 1, 1, alignment=Qt.AlignCenter)
 
-                curr[0] = max(0, min(curr[0], sizes[0] - 1))
-                curr[1] = max(0, min(curr[1], sizes[1] - 1))
-                table.setCurrentIndex(curr[0] * sizes[1] + curr[1])
+            joint_prob_layout.addWidget(
+                QLabel("Совместные вероятности текста B"), 0, 1, alignment=Qt.AlignCenter)
+            joint_prob_B = self.create_table_with_data(
+                self.sa2.joint_prob, labels)
+            joint_prob_layout.addWidget(
+                joint_prob_B, 1, 1, alignment=Qt.AlignCenter)
 
-        # Добавляем кнопки для переключения
-        btns_container = QWidget()
-        btns_layout = QGridLayout()
-        btns_container.setLayout(btns_layout)
-        directions = {"←": "left", "→": "right", "↑": "up", "↓": "down"}
-        for idx, (text, direction) in enumerate(directions.items()):
-            btn = QPushButton(text)
-            btn.setFixedSize(40, 40)
-            btn.clicked.connect(lambda _, d=direction: change_table_view(d))
-            # Выравнивание кнопок
-            horizontal_alignment = Qt.AlignRight if idx % 2 == 0 else Qt.AlignLeft
-            vertical_alignment = Qt.AlignBottom if idx < 2 else Qt.AlignTop
-            alignment = horizontal_alignment | vertical_alignment
-            btns_layout.addWidget(btn, idx // 2, idx % 2, alignment=alignment)
+            condi_prob_layout.addWidget(
+                QLabel("Условные вероятности текста B"), 0, 1, alignment=Qt.AlignCenter)
+            condi_prob_B = self.create_table_with_data(
+                self.sa2.condi_prob, labels)
+            condi_prob_layout.addWidget(
+                condi_prob_B, 1, 1, alignment=Qt.AlignCenter)
 
-        page_3_layout.addWidget(btns_container, 1, 1)
+        # Добавляем 1-3 страницы:
+        tab.addTab(prob_container, "Безусловные вероятности")
+        tab.addTab(joint_prob_container, "Совместные вероятности")
+        tab.addTab(condi_prob_container, "Условные вероятности")
+
+        # Все данные вероятностей при паре текстов A и B
+        if self.sa1.file_path and self.sa2.file_path:
+            # 4 страница — совместные вероятности пары текстов
+            joint_prob_two_container = QWidget()
+            joint_prob_two_layout = QGridLayout()
+            joint_prob_two_container.setLayout(joint_prob_two_layout)
+
+            joint_prob_two_layout.addWidget(
+                QLabel("Совместные вероятнсти A и B текстов"), 0, 0, alignment=Qt.AlignCenter)
+            joint_prob_AB = self.create_table_with_data(
+                self.sa1.calculate_conditional_prob_with(self.sa2), labels)
+            joint_prob_two_layout.addWidget(
+                joint_prob_AB, 1, 0, alignment=Qt.AlignCenter)
+
+            joint_prob_two_layout.addWidget(
+                QLabel("Совместные вероятнсти B и A текстов"), 0, 1, alignment=Qt.AlignCenter)
+            joint_prob_BA = self.create_table_with_data(
+                self.sa2.calculate_conditional_prob_with(self.sa1), labels)
+            joint_prob_two_layout.addWidget(
+                joint_prob_BA, 1, 1, alignment=Qt.AlignCenter)
+
+            tab.addTab(joint_prob_two_container,
+                       "Совместные вероятности пары текстов")
+
+            # 5 страница — условные вероятности пары текстов
+            condi_prob_two_container = QWidget()
+            condi_prob_two_layout = QGridLayout()
+            condi_prob_two_container.setLayout(condi_prob_two_layout)
+
+            condi_prob_two_layout.addWidget(
+                QLabel("Условные вероятнсти A при тексте B"), 0, 0, alignment=Qt.AlignCenter)
+            condi_prob_AB = self.create_table_with_data(
+                self.sa1.calculate_conditional_prob_with(self.sa2), labels)
+            condi_prob_two_layout.addWidget(
+                condi_prob_AB, 1, 0, alignment=Qt.AlignCenter)
+
+            condi_prob_two_layout.addWidget(
+                QLabel("Условные вероятнсти B при тексте A"), 0, 1, alignment=Qt.AlignCenter)
+            condi_prob_BA = self.create_table_with_data(
+                self.sa2.calculate_conditional_prob_with(self.sa1), labels)
+            condi_prob_two_layout.addWidget(
+                condi_prob_BA, 1, 1, alignment=Qt.AlignCenter)
+
+            tab.addTab(condi_prob_two_container,
+                       "Условные вероятности пары текстов")
+
         return tab
 
-    def create_table_in_parts(self, data, alphabet, max_row_elems=9, max_col_elems=9):
-        alp = "Ø" + alphabet[:-1] + "_"
-        result = QStackedWidget()
-        alp_len = len(alp)
-        row_parts = (alp_len + max_row_elems - 1) // max_row_elems
-        col_parts = (alp_len + max_col_elems - 1) // max_col_elems
-        table_parts = [[QTableWidget() for _ in range(col_parts)]
-                       for _ in range(row_parts)]
-
-        for i in range(row_parts):
-            for j in range(col_parts):
-                table = table_parts[i][j]
-                table.setRowCount(max_row_elems)
-                table.setColumnCount(max_col_elems)
-                table.verticalHeader().setDefaultSectionSize(30)
-                table.horizontalHeader().setDefaultSectionSize(40)
-                table.setFixedSize(
-                    max_col_elems*40+table.horizontalHeader().height(),  (max_row_elems+1)*30)
-                row_start, row_end = i * \
-                    max_row_elems, min((i + 1) * max_row_elems, alp_len)
-                col_start, col_end = j * \
-                    max_col_elems, min((j + 1) * max_col_elems, alp_len)
-
-                for k in range(row_start, row_end):
-                    for l in range(col_start, col_end):
-                        table.setItem(k - row_start, l - col_start,
-                                      QTableWidgetItem(str(round(data[k][l], 3))))
-
-                table.setHorizontalHeaderLabels(
-                    list(alp[col_start:col_end]))
-                table.setVerticalHeaderLabels(
-                    list(alp[row_start:row_end]))
-                # Запретить редактирование
-                table.setEditTriggers(
-                    QAbstractItemView.NoEditTriggers)
-                result.addWidget(table)
-        result.setCurrentIndex(0)
-        return result, [row_parts, col_parts], [0, 0]
-##
+    def create_table_with_data(self, data, labels, width=380, height=450, cell_w=40, cell_h=30):
+        table = QTableWidget()
+        table.setRowCount(len(data))
+        table.setColumnCount(
+            len(data[0]) if isinstance(data[0], list) else 1)
+        is_matrix = isinstance(data[0], list)
+        cell_w = cell_w if is_matrix else 2*cell_w
+        # Размер таблицы
+        if not is_matrix:
+            table.setFixedWidth(cell_w+table.verticalHeader().width())
+        else:
+            table.setFixedWidth(width)
+        table.setFixedHeight(height)
+        # Заголовки таблиц
+        if is_matrix:
+            table.setHorizontalHeaderLabels(
+                list(labels))
+        else:
+            table.setHorizontalHeaderLabels(["p(a_i)"])
+        table.setVerticalHeaderLabels(
+            list(labels))
+        # Размеры заголовков
+        table.horizontalHeader().setDefaultSectionSize(cell_w)
+        table.verticalHeader().setDefaultSectionSize(cell_h)
+        # запрет редактирования значений таблицы
+        table.setEditTriggers(
+            QAbstractItemView.NoEditTriggers)
+        for k in range(len(data)):
+            if is_matrix:
+                for l in range(len(data[k])):
+                    table.setItem(k, l, QTableWidgetItem(
+                        str(round(data[k][l], 3))))
+            else:
+                table.setItem(k, 0, QTableWidgetItem(str(round(data[k], 3))))
+        return table
 
     def histograms_page(self):
         # Общий контейнер
