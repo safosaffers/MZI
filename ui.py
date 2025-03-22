@@ -309,8 +309,8 @@ class UI(QMainWindow):
 
         # Таблица усл. вер. для A
         if self.sa1.file_path != "":
-            self.table_3A, self.sizes_table_3, self.current_table_3 = self.add_tables_to_layout(
-                self.sa1)
+            self.table_3A, self.sizes_table_3, self.current_table_3 = self.create_table_in_parts(
+                self.sa1.condi_probabilities, self.sa1.alphabet, max_row_elems=9, max_col_elems=9)
             page_3_layout.addWidget(
                 QLabel("Условные вероятности текста A"), 0, 0, alignment=Qt.AlignTop | Qt.AlignCenter)
             page_3_layout.addWidget(
@@ -319,7 +319,8 @@ class UI(QMainWindow):
 
         # Таблица усл. вер. для B
         if self.sa2.file_path != "":
-            self.table_3B, _, _ = self.add_tables_to_layout(self.sa2)
+            self.table_3B, _, _ = self.create_table_in_parts(
+                self.sa2.condi_probabilities, self.sa2.alphabet, max_row_elems=9, max_col_elems=9)
             page_3_layout.addWidget(
                 QLabel("Условные вероятности текста B"), 0, 2, alignment=Qt.AlignTop | Qt.AlignCenter)
             page_3_layout.addWidget(
@@ -365,54 +366,44 @@ class UI(QMainWindow):
         page_3_layout.addWidget(btns_container, 1, 1)
         return tab
 
-    def add_tables_to_layout(self, sa):  # , layout
-        def create_table(data, alphabet, max_row_elems=9, max_col_elems=9):
-            result = QStackedWidget()
-            alp_len = len(alphabet)
-            row_parts = (alp_len + max_row_elems - 1) // max_row_elems
-            col_parts = (alp_len + max_col_elems - 1) // max_col_elems
-            table_parts = [[QTableWidget() for _ in range(col_parts)]
-                           for _ in range(row_parts)]
+    def create_table_in_parts(self, data, alphabet, max_row_elems=9, max_col_elems=9):
+        alp = "Ø" + alphabet[:-1] + "_"
+        result = QStackedWidget()
+        alp_len = len(alp)
+        row_parts = (alp_len + max_row_elems - 1) // max_row_elems
+        col_parts = (alp_len + max_col_elems - 1) // max_col_elems
+        table_parts = [[QTableWidget() for _ in range(col_parts)]
+                       for _ in range(row_parts)]
 
-            for i in range(row_parts):
-                for j in range(col_parts):
-                    table = table_parts[i][j]
-                    table.setRowCount(max_row_elems)
-                    table.setColumnCount(max_col_elems)
-                    table.verticalHeader().setDefaultSectionSize(30)
-                    table.horizontalHeader().setDefaultSectionSize(40)
-                    table.setFixedSize(
-                        max_col_elems*40+table.horizontalHeader().height(),  (max_row_elems+1)*30)
-                    row_start, row_end = i * \
-                        max_row_elems, min((i + 1) * max_row_elems, alp_len)
-                    col_start, col_end = j * \
-                        max_col_elems, min((j + 1) * max_col_elems, alp_len)
+        for i in range(row_parts):
+            for j in range(col_parts):
+                table = table_parts[i][j]
+                table.setRowCount(max_row_elems)
+                table.setColumnCount(max_col_elems)
+                table.verticalHeader().setDefaultSectionSize(30)
+                table.horizontalHeader().setDefaultSectionSize(40)
+                table.setFixedSize(
+                    max_col_elems*40+table.horizontalHeader().height(),  (max_row_elems+1)*30)
+                row_start, row_end = i * \
+                    max_row_elems, min((i + 1) * max_row_elems, alp_len)
+                col_start, col_end = j * \
+                    max_col_elems, min((j + 1) * max_col_elems, alp_len)
 
-                    for k in range(row_start, row_end):
-                        for l in range(col_start, col_end):
-                            table.setItem(k - row_start, l - col_start,
-                                          QTableWidgetItem(str(round(data[k][l], 3))))
+                for k in range(row_start, row_end):
+                    for l in range(col_start, col_end):
+                        table.setItem(k - row_start, l - col_start,
+                                      QTableWidgetItem(str(round(data[k][l], 3))))
 
-                    table.setHorizontalHeaderLabels(
-                        list(alphabet[col_start:col_end]))
-                    table.setVerticalHeaderLabels(
-                        list(alphabet[row_start:row_end]))
-                    # Запретить редактирование
-                    table.setEditTriggers(
-                        QAbstractItemView.NoEditTriggers)
-                    result.addWidget(table)
-
-            return result, [row_parts, col_parts], [0, 0]
-
-        new_alphabet = "Ø" + sa.alphabet[:-1] + "_"
-        table_stacked_widget, sizes_table_3, current_table_3 = create_table(
-            sa.condi_probabilities, new_alphabet)  # Удали self'ы
-
-        # layout.addWidget(table_stacked_widget)
-        table_stacked_widget.setCurrentIndex(0)
-
-        return table_stacked_widget, sizes_table_3, current_table_3
-
+                table.setHorizontalHeaderLabels(
+                    list(alp[col_start:col_end]))
+                table.setVerticalHeaderLabels(
+                    list(alp[row_start:row_end]))
+                # Запретить редактирование
+                table.setEditTriggers(
+                    QAbstractItemView.NoEditTriggers)
+                result.addWidget(table)
+        result.setCurrentIndex(0)
+        return result, [row_parts, col_parts], [0, 0]
 ##
 
     def histograms_page(self):
