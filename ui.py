@@ -19,7 +19,7 @@ class UI(QMainWindow):
         self.sa1 = StaticAnalyzer()  # Для первого текста
         self.sa2 = StaticAnalyzer()  # Для второго текста
         self.setWindowTitle("Анализатор текста")
-        self.setGeometry(100, 100, 940, 700)
+        self.setGeometry(100, 100, 990, 700)
         self.show()
 
         # Центральный виджет
@@ -298,9 +298,6 @@ class UI(QMainWindow):
 
         # Общий контейнер - вкладки для таблиц
         tab = QTabWidget()
-        with open("QTabWidget_styles.qss", "r") as f:
-            _style = f.read()
-            tab.setStyleSheet(_style)
 
         # Контейнеры страниц
         # 1 страница — безусловные вероятности текстов

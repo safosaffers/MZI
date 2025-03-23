@@ -5,4 +5,4 @@ from ui import UI
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = UI()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
