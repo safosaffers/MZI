@@ -20,6 +20,7 @@ class UI(QMainWindow):
         self.sa2 = StaticAnalyzer()  # Для второго текста
         self.setWindowTitle("Анализатор текста")
         self.setGeometry(100, 100, 990, 700)
+        self.centerOnScreen()
         self.show()
 
         # Центральный виджет
@@ -57,6 +58,27 @@ class UI(QMainWindow):
 
         # Показываем окно
         self.show()
+
+    def centerOnScreen(self):
+        # Получаем геометрию основного экрана
+        screen = QGuiApplication.primaryScreen()
+        screen_geometry = screen.availableGeometry()
+
+        # Размеры окна
+        window_size = self.size()
+        width = window_size.width()
+        height = window_size.height()
+
+        # Вычисляем центральные координаты
+        x = (screen_geometry.width() - width) // 2
+        y = (screen_geometry.height() - height) // 2 - \
+            50  # Смещение на 50 пикселей вверх
+
+        # Перемещаем окно
+        self.move(x, y)
+
+        # Фиксируем размер окна
+        self.setFixedSize(window_size.width(), window_size.height())
 
     def selecting_files_for_analysis_page(self):
 
