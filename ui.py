@@ -5,10 +5,10 @@
 """
 
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import *
+from PySide6.QtGui import *
+from PySide6.QtCore import *
 import pyqtgraph as pg
 from static_analyzer import StaticAnalyzer  # import backend
 
