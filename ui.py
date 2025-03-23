@@ -5,12 +5,16 @@
 """
 
 
-from PySide6.QtCore import Qt
+from PySide6.QtGui import *
 from PySide6.QtWidgets import *
 from PySide6.QtGui import *
 from PySide6.QtCore import *
 import pyqtgraph as pg
-from static_analyzer import StaticAnalyzer  # import backend
+# Подключение основной библиотеки анализатора
+from static_analyzer import StaticAnalyzer
+# Подключение стилей
+from Custom_Widgets.QCustomModals import QCustomModals
+from PySide6.QtCore import *
 
 
 class UI(QMainWindow):
@@ -21,7 +25,6 @@ class UI(QMainWindow):
         self.setWindowTitle("Анализатор текста")
         self.setGeometry(100, 100, 990, 700)
         self.centerOnScreen()
-        self.show()
 
         # Центральный виджет
         central_widget = QWidget()
@@ -207,22 +210,38 @@ class UI(QMainWindow):
             other_edit.setText(''.join(other_sa.text_in_alphabet))
             self.show_msg_box_text_was_trimmed(2 if QTextEdit_num == 1 else 1)
 
+    def apply_shadow_effect(self, modal):
+        shadow_effect = QGraphicsDropShadowEffect(modal)
+        shadow_effect.setBlurRadius(10)
+        shadow_effect.setColor(QColor(0, 0, 0, 150))
+        shadow_effect.setOffset(0, 0)
+        modal.setGraphicsEffect(shadow_effect)
+
     def show_msg_box_text_was_trimmed(self, num=-1):
         if num == -1:
             return
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Warning)
-        msg.setWindowTitle("Предупреждение")
-        msg.setText(
-            f"Текст {'A' if num == 1 else 'B'} был урезан для соответствия длине текста {'B' if num == 1 else 'A'}.")
-        msg.exec_()
+        kwargs = {
+            "title": "Предупреждение",
+            "description": f"Текст {'A' if num == 1 else 'B'} был урезан для соответствия длине текста {'B' if num == 1 else 'A'}.",
+            "position": "top-center",
+            "parent": self,
+            "animationDuration": 3000  # set to zero if you want you modal to not auto-close
+        }
+        modal = QCustomModals.WarningModal(**kwargs)
+        self.apply_shadow_effect(modal)
+        modal.show()
 
     def show_msg_box_file_not_chosen(self):
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Warning)
-        msg.setWindowTitle("Ошибка")
-        msg.setText("Пожалуйста, выберите файл(ы) для анализа")
-        msg.exec_()
+        kwargs = {
+            "title": "Ошибка",
+            "description": "Пожалуйста, выберите файл(ы) для анализа",
+            "position": "top-center",
+            "parent": self,
+            "animationDuration": 3000  # set to zero if you want you modal to not auto-close
+        }
+        modal = QCustomModals.ErrorModal(**kwargs)
+        self.apply_shadow_effect(modal)
+        modal.show()
 
     def start_analyze(self):
         # Выполняем анализ
