@@ -4,17 +4,14 @@
 используя таблицы и рисунки(гистограммы).
 """
 
-
-from PySide6.QtGui import *
+from Custom_Widgets.QCustomModals import QCustomModals
+from static_analyzer import StaticAnalyzer
+import pyqtgraph as pg
+from PySide6.QtCore import *
 from PySide6.QtWidgets import *
 from PySide6.QtGui import *
-from PySide6.QtCore import *
-import pyqtgraph as pg
 # Подключение основной библиотеки анализатора
-from static_analyzer import StaticAnalyzer
 # Подключение стилей
-from Custom_Widgets.QCustomModals import QCustomModals
-from PySide6.QtCore import *
 
 
 class UI(QMainWindow):
@@ -335,6 +332,15 @@ class UI(QMainWindow):
                 QLabel(f"{self.sa2.joint_entropy_with(self.sa1):.4f}"), 3, 3)
         return container
 
+    def get_labels_from_alphabet(self, sa):
+        alp_list = list(sa.alphabet)
+        labels = ["Ø"]
+        if sa.alphabet[-1] == ' ':
+            labels += alp_list[:-1] + ["'_'"]
+        else:
+            labels += alp_list
+        return labels
+
     def prob_tables_page(self):
 
         # Общий контейнер - вкладки для таблиц
@@ -356,8 +362,7 @@ class UI(QMainWindow):
 
         # Все данные вероятностей по одному тексту A
         if self.sa1.file_path:
-            labels = "Ø" + self.sa1.alphabet[:-1] + "_"
-
+            labels = self.get_labels_from_alphabet(self.sa1)
             prob_layout.addWidget(
                 QLabel("Безусловные вероятности текста A"), 0, 0, alignment=Qt.AlignCenter)
             prob_A = self.create_table_with_data(self.sa1.prob, labels)
@@ -379,8 +384,7 @@ class UI(QMainWindow):
 
         # Все данные вероятностей по одному тексту B
         if self.sa2.file_path:
-            labels = "Ø" + self.sa2.alphabet[:-1] + "_"
-
+            labels = self.get_labels_from_alphabet(self.sa2)
             prob_layout.addWidget(
                 QLabel("Безусловные вероятности текста B"), 0, 1, alignment=Qt.AlignCenter)
             prob_B = self.create_table_with_data(self.sa2.prob, labels)
@@ -407,6 +411,7 @@ class UI(QMainWindow):
 
         # Все данные вероятностей при паре текстов A и B
         if self.sa1.file_path and self.sa2.file_path:
+            labels = self.get_labels_from_alphabet(self.sa1)
             # 4 страница — совместные вероятности пары текстов
             joint_prob_two_container = QWidget()
             joint_prob_two_layout = QGridLayout()
@@ -535,23 +540,20 @@ class UI(QMainWindow):
     def create_histogram(self, current_sa):
         histogram_widget = pg.GraphicsLayoutWidget()
         histogram_widget.setBackground(QColor(33, 46, 74))
-
-        alphabet_list = list(current_sa.alphabet)
-        new_alphabet = alphabet_list[:-1] + ["'_'"]
-        xdict = dict(enumerate(new_alphabet))
+        labels = self.get_labels_from_alphabet(current_sa)
+        xdict = dict(enumerate(labels))
         stringaxis = pg.AxisItem(orientation='bottom')
         stringaxis.setTicks([xdict.items()])
 
         plt1 = histogram_widget.addPlot(axisItems={'bottom': stringaxis})
         plt1.setLimits(
-            xMin=-2, xMax=current_sa.alphabet_len - 1, minXRange=7, maxXRange=100,
-            yMin=0, yMax=max(current_sa.frequencies[1:]) + 1, minYRange=100, maxYRange=100
+            xMin=-2, xMax=current_sa.alphabet_len, minXRange=1, maxXRange=100,
+            yMin=0, yMax=max(current_sa.frequencies)*1.01, minYRange=1, maxYRange=100
         )
 
         hist = pg.BarGraphItem(
-            x=range(current_sa.alphabet_len - 1), height=current_sa.frequencies[1:], width=0.8,
+            x=range(current_sa.alphabet_len), height=current_sa.frequencies, width=0.8,
             pen=QColor(33, 46, 74), brush=QColor(198, 104, 51)
         )
         plt1.addItem(hist)
-
         return histogram_widget
