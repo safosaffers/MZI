@@ -10,6 +10,7 @@ import pyqtgraph as pg
 from PySide6.QtCore import *
 from PySide6.QtWidgets import *
 from PySide6.QtGui import *
+from PySide6.QtMultimedia import QSoundEffect
 # Подключение основной библиотеки анализатора
 # Подключение стилей
 
@@ -146,6 +147,17 @@ class UI(QMainWindow):
         self.button_analyze.clicked.connect(self.start_analyze)
         combined_layout.addWidget(self.button_analyze)
 
+        # Предварительная загрузка звуковых эффектов
+        self.soundError = QSoundEffect()
+        self.soundError.setSource(
+            QUrl.fromLocalFile("./sounds\snd_error.wav"))
+        self.soundWarning = QSoundEffect()
+        self.soundWarning.setSource(
+            QUrl.fromLocalFile("./sounds\snd_warning.wav"))
+        self.soundSuccess = QSoundEffect()
+        self.soundSuccess.setSource(
+            QUrl.fromLocalFile("./sounds\snd_success.wav"))
+
         # Устанавливаем общий макет в контейнер
         combined_container.setLayout(combined_layout)
 
@@ -225,6 +237,7 @@ class UI(QMainWindow):
         modal = QCustomModals.SuccessModal(**kwargs)
         self.apply_shadow_effect(modal)
         modal.show()
+        self.soundSuccess.play()
 
     def show_msg_text_was_trimmed(self, num=-1):
         if num == -1:
@@ -239,6 +252,7 @@ class UI(QMainWindow):
         modal = QCustomModals.WarningModal(**kwargs)
         self.apply_shadow_effect(modal)
         modal.show()
+        self.soundWarning.play()
 
     def show_msg_file_not_chosen(self):
         kwargs = {
@@ -251,6 +265,7 @@ class UI(QMainWindow):
         modal = QCustomModals.ErrorModal(**kwargs)
         self.apply_shadow_effect(modal)
         modal.show()
+        self.soundError.play()
 
     def start_analyze(self):
         # Выполняем анализ
