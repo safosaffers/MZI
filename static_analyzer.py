@@ -13,7 +13,7 @@ class StaticAnalyzer:
         self.file_path = ""
         self.text_len = -1  # текс не был загружен
         self.text = []
-        self.text_in_numbers = []
+        self.text_in_alphabet_numbers = []
         self.text_in_alphabet = []
         self.prob = []
         self.frequencies = []
@@ -51,13 +51,14 @@ class StaticAnalyzer:
         self.text_len = -1
         self.file_path = ""
         self.text = []
-        self.text_in_numbers = []
+        self.text_in_alphabet_numbers = []
         self.text_in_alphabet = []
 
     def process_text_forms(self, file_path, max_len=-1):
         self.clear_text_data()
         self.file_path = file_path
-        self.text_in_numbers.append(0)  # начало файла
+        self.text_in_alphabet_numbers.append(0)  # начало файла
+        self.text_in_alphabet.append('Ø')
         self.text_len = 2  # добавляем два символа начало и конец файла
         with open(file_path, 'r', encoding='utf-8') as f:
             while (max_len == -1 or self.text_len < max_len) and (char := f.read(1)):
@@ -65,14 +66,22 @@ class StaticAnalyzer:
                 char = char.lower()
                 if char in self.alphabet:
                     self.text_in_alphabet.append(char)
-                    self.text_in_numbers.append(self.alphabet.find(char)+1)
+                    self.text_in_alphabet_numbers.append(
+                        self.alphabet.find(char)+1)
                     self.text_len += 1
             # если остался нерпочитанный символ и он пренадлежит алфавиту
             # то мы сообщим о том, что текст был урезан
             char = f.read(1)
             trimmed_to_max_len = bool(char in self.alphabet and char != "")
-        self.text_in_numbers.append(0)  # конец файла
+        self.text_in_alphabet_numbers.append(0)  # конец файла
+        self.text_in_alphabet.append('Ø')
         return trimmed_to_max_len
+
+    def trimm_text_to_n(self, n):
+        self.text = self.text[:(n-1)]+['Ø']
+        self.text_in_alphabet = self.text_in_alphabet[:(n-1)]+['Ø']
+        self.text_in_alphabet_numbers = self.text_in_alphabet_numbers[:(
+            n-1)]+[0]
 
 #################################################################################
 #                       Методы для вычисления вероятностей                      #
@@ -84,7 +93,7 @@ class StaticAnalyzer:
     def prob_and_frequencies(self):
         frequencies = [0] * (self.alphabet_len)
         total = 0
-        for i in self.text_in_numbers:
+        for i in self.text_in_alphabet_numbers:
             frequencies[i] += 1
             total += 1
         prob = [freq / total if total !=
@@ -97,10 +106,10 @@ class StaticAnalyzer:
         joint_frequencies = [
             [0 for _ in range(self.alphabet_len)] for _ in range(self.alphabet_len)]  # +1
         total_pairs = 1  # пары начала/конца и пара начало-конец
-        text_len = len(self.text_in_numbers)
+        text_len = len(self.text_in_alphabet_numbers)
         for i in range(text_len-1):
-            char_1 = self.text_in_numbers[i]
-            char_2 = self.text_in_numbers[i+1]  # tab
+            char_1 = self.text_in_alphabet_numbers[i]
+            char_2 = self.text_in_alphabet_numbers[i+1]  # tab
             joint_frequencies[char_1][char_2] += 1
             total_pairs += 1
         joint_frequencies[0][0] = 1  # "Закольцовывание" начала и конца файла
@@ -150,6 +159,7 @@ class StaticAnalyzer:
 
 # Вычисление совместной вероятности для пары текстов
 
+
     def calculate_joint_prob_with(self, other):
         if self.alphabet_number != other.alphabet_number:
             raise ValueError("Тексты должны иметь одинаковый алфавит!.")
@@ -161,8 +171,8 @@ class StaticAnalyzer:
         minLen = min(self.text_len, other.text_len)
         total_pairs = 0
         for i in range(minLen):  # Для случаев двух текстов последний "нуль символ" не смотрится
-            char_a = self.text_in_numbers[i]
-            char_b = other.text_in_numbers[i]
+            char_a = self.text_in_alphabet_numbers[i]
+            char_b = other.text_in_alphabet_numbers[i]
             joint_frequencies[char_a][char_b] += 1
             total_pairs += 1
 

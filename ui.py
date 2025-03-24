@@ -215,7 +215,7 @@ class UI(QMainWindow):
         if trimmed_to_max_len:
             self.show_msg_text_was_trimmed(QTextEdit_num)
         elif other_sa.text_len > target_sa.text_len:
-            other_sa.text_in_alphabet = other_sa.text_in_alphabet[:target_sa.text_len]
+            other_sa.trimm_text_to_n(target_sa.text_len)
             other_edit.setText(''.join(other_sa.text_in_alphabet))
             self.show_msg_text_was_trimmed(2 if QTextEdit_num == 1 else 1)
 
