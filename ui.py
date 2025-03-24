@@ -201,11 +201,11 @@ class UI(QMainWindow):
 
         # Если текст был укорочен, сообщаем об этом
         if trimmed_to_max_len:
-            self.show_msg_box_text_was_trimmed(QTextEdit_num)
+            self.show_msg_text_was_trimmed(QTextEdit_num)
         elif other_sa.text_len > target_sa.text_len:
             other_sa.text_in_alphabet = other_sa.text_in_alphabet[:target_sa.text_len]
             other_edit.setText(''.join(other_sa.text_in_alphabet))
-            self.show_msg_box_text_was_trimmed(2 if QTextEdit_num == 1 else 1)
+            self.show_msg_text_was_trimmed(2 if QTextEdit_num == 1 else 1)
 
     def apply_shadow_effect(self, modal):
         shadow_effect = QGraphicsDropShadowEffect(modal)
@@ -214,7 +214,19 @@ class UI(QMainWindow):
         shadow_effect.setOffset(0, 0)
         modal.setGraphicsEffect(shadow_effect)
 
-    def show_msg_box_text_was_trimmed(self, num=-1):
+    def show_msg_success_analyze(self):
+        kwargs = {
+            "title": "Успех",
+            "description": "Анализ успешно завершён и\n доступен на вкладке \"Результаты анализа\"",
+            "position": "top-center",
+            "parent": self,
+            "animationDuration": 3000  # set to zero if you want you modal to not auto-close
+        }
+        modal = QCustomModals.SuccessModal(**kwargs)
+        self.apply_shadow_effect(modal)
+        modal.show()
+
+    def show_msg_text_was_trimmed(self, num=-1):
         if num == -1:
             return
         kwargs = {
@@ -228,7 +240,7 @@ class UI(QMainWindow):
         self.apply_shadow_effect(modal)
         modal.show()
 
-    def show_msg_box_file_not_chosen(self):
+    def show_msg_file_not_chosen(self):
         kwargs = {
             "title": "Ошибка",
             "description": "Пожалуйста, выберите файл(ы) для анализа",
@@ -243,7 +255,7 @@ class UI(QMainWindow):
     def start_analyze(self):
         # Выполняем анализ
         if self.sa1.file_path == "" and self.sa2.file_path == "":
-            self.show_msg_box_file_not_chosen()
+            self.show_msg_file_not_chosen()
         else:
             if self.sa1.file_path != "":
                 self.sa1.single_text_analyze()
@@ -252,6 +264,7 @@ class UI(QMainWindow):
 
             # Страница выбора файлов для анализа
             self.analyze_results_page()
+            self.show_msg_success_analyze()
 
     def analyze_results_page(self):
         # Удаляем старые результаты анализа, если он производился
