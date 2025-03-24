@@ -150,13 +150,13 @@ class UI(QMainWindow):
         # Предварительная загрузка звуковых эффектов
         self.soundError = QSoundEffect()
         self.soundError.setSource(
-            QUrl.fromLocalFile("./sounds\snd_error.wav"))
+            QUrl.fromLocalFile(".//sounds//snd_error.wav"))
         self.soundWarning = QSoundEffect()
         self.soundWarning.setSource(
-            QUrl.fromLocalFile("./sounds\snd_warning.wav"))
+            QUrl.fromLocalFile(".//sounds//snd_warning.wav"))
         self.soundSuccess = QSoundEffect()
         self.soundSuccess.setSource(
-            QUrl.fromLocalFile("./sounds\snd_success.wav"))
+            QUrl.fromLocalFile(".//sounds//snd_success.wav"))
 
         # Устанавливаем общий макет в контейнер
         combined_container.setLayout(combined_layout)
