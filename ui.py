@@ -46,16 +46,16 @@ class UI(QMainWindow):
         # Страница выбора файлов для анализа
         self.selecting_files_for_analysis_page()
 
-        # # Создание страниц
-        # self.create_table_page()
-        # self.create_histogram_page()
-
         # Подключение кнопок к переключению страниц
         self.table_button.clicked.connect(
             lambda: self.stacked_widget.setCurrentIndex(0))
         self.analyze_result.clicked.connect(
             lambda: self.stacked_widget.setCurrentIndex(1))
 
+        # Делаем шрифт больше
+        font = self.font()  # Получаем текущий шрифт приложения
+        font.setPointSize(13)  # Устанавливаем размер шрифта
+        self.setFont(font)
         # Показываем окно
         self.show()
 
@@ -471,7 +471,7 @@ class UI(QMainWindow):
 
         return tab
 
-    def create_table_with_data(self, data, labels, width=380, height=450, cell_w=40, cell_h=30):
+    def create_table_with_data(self, data, labels, width=380, height=450, cell_w=50, cell_h=30):
         table = QTableWidget()
         table.setRowCount(len(data))
         table.setColumnCount(
