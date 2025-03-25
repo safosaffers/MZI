@@ -276,9 +276,9 @@ class UI(QMainWindow):
         if self.sa1.file_path == "" and self.sa2.file_path == "":
             self.show_message("error")
         else:
-            if self.sa1.file_path != "":
+            if self.sa1.file_path:
                 self.sa1.single_text_analyze()
-            if self.sa2.file_path != "":
+            if self.sa2.file_path:
                 self.sa2.single_text_analyze()
 
             # Страница выбора файлов для анализа
@@ -546,7 +546,7 @@ class UI(QMainWindow):
             page1 = QWidget()
             layout1 = QVBoxLayout()
             layout1.addWidget(
-                QLabel("Гистограмма встречаемости символов текста A"))
+                QLabel("Гистограмма встречаемости символов текста A"), alignment=Qt.AlignTop)
             layout1.addWidget(self.create_histogram(self.sa1))
             page1.setLayout(layout1)
             stacked_widget.addWidget(page1)
@@ -556,7 +556,7 @@ class UI(QMainWindow):
             page2 = QWidget()
             layout2 = QVBoxLayout()
             layout2.addWidget(
-                QLabel("Гистограмма встречаемости символов текста B"))
+                QLabel("Гистограмма встречаемости символов текста B"), alignment=Qt.AlignTop)
             layout2.addWidget(self.create_histogram(self.sa2))
             page2.setLayout(layout2)
             stacked_widget.addWidget(page2)
@@ -601,24 +601,28 @@ class UI(QMainWindow):
         container = QWidget()
         layout = QGridLayout()
         container.setLayout(layout)
-        layout.addWidget(QLabel("Экспорт результатов анализа"),
-                         0, 0, alignment=Qt.AlignTop | Qt.AlignCenter)
+        layout.addWidget(QLabel("Экспорт результатов анализа в файл Excel"),
+                         0, 0, 1, 2, alignment=Qt.AlignTop | Qt.AlignCenter)
 
         layout.addWidget(QLabel("Энтропии"), 1, 0,
                          alignment=Qt.AlignTop | Qt.AlignCenter)
         self.cbx_export_entropy = QCheckBox()
+        self.cbx_export_entropy.setChecked(True)
         layout.addWidget(self.cbx_export_entropy, 1, 1,
                          alignment=Qt.AlignTop | Qt.AlignCenter)
 
         layout.addWidget(QLabel("Таблицы вероятностей"),
                          2, 0, alignment=Qt.AlignTop | Qt.AlignCenter)
         self.cbx_export_probabilities = QCheckBox()
+        self.cbx_export_probabilities.setChecked(True)
         layout.addWidget(self.cbx_export_probabilities,
                          2, 1, alignment=Qt.AlignTop | Qt.AlignCenter)
 
         layout.addWidget(QLabel("Гистограммы частот"),
                          3, 0, alignment=Qt.AlignTop | Qt.AlignCenter)
         self.cbx_export_histograms = QCheckBox()
+        self.cbx_export_histograms.setChecked(True)
+
         layout.addWidget(self.cbx_export_histograms,
                          3, 1, alignment=Qt.AlignTop | Qt.AlignCenter)
 
@@ -628,5 +632,55 @@ class UI(QMainWindow):
         self.btn_export.clicked.connect(self.create_export_file)
         return container
 
+    def add_entropy_worksheet(self, workbook):
+        entropy_worksheet = workbook.add_worksheet("Энтропии")
+        entropy_results = []
+
+        if self.sa1.file_path:
+            entropy_A_results = [
+                ("Энтропия A:", round(self.sa1.entropy, 4)),
+                ("Марковская энтропия H(A|A):",
+                    round(self.sa1.markov_entropy, 4))
+            ]
+            entropy_results.extend(entropy_A_results)
+
+        if self.sa2.file_path:
+            entropy_B_results = [
+                ("Энтропия B:", round(self.sa2.entropy, 4)),
+                ("Марковская энтропия H(B|B):",
+                    round(self.sa2.markov_entropy, 4))
+            ]
+            entropy_results.extend(entropy_B_results)
+
+        if self.sa2.file_path and self.sa1.file_path:
+            entropy_AB_results = [
+                ("Марковская энтропия H(A|B):", round(
+                    self.sa1.markov_entropy_with(self.sa2), 4)),
+                ("Марковская энтропия H(B|A):", round(
+                    self.sa2.markov_entropy_with(self.sa1), 4)),
+                ("Совместная энтропия H(A,B):", round(
+                    self.sa1.joint_entropy_with(self.sa2), 4)),
+                ("Совместная энтропия H(B,A):", round(
+                    self.sa2.joint_entropy_with(self.sa1), 4))
+            ]
+            entropy_results.extend(entropy_AB_results)
+        if not entropy_results:
+            return
+
+        entropy_worksheet.set_column(0, 0, 30)
+        for idx, (label, data) in enumerate(entropy_results):
+            # Заголовок в первый столбец
+            entropy_worksheet.write(idx, 0, label)
+            # Значение во второй столбец
+            entropy_worksheet.write(idx, 1, data)
+
     def create_export_file(self):
+        time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        workbook = xlsxwriter.Workbook(f"analyze_result_{time}.xlsx")
+
+        # Информация по энтропии
+        if self.cbx_export_entropy.isChecked():
+            self.add_entropy_worksheet(workbook)
+
+        workbook.close()
         self.show_message("success", text="Результаты сохранены в файл")
