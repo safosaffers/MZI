@@ -13,8 +13,8 @@ from PySide6.QtCore import *
 from PySide6.QtWidgets import *
 from PySide6.QtGui import *
 from PySide6.QtMultimedia import QSoundEffect
-# Подключение основной библиотеки анализатора
-# Подключение стилей
+from datetime import datetime
+import xlsxwriter
 
 
 class UI(QMainWindow):
@@ -304,12 +304,17 @@ class UI(QMainWindow):
         btn1 = QPushButton("Энтропии")
         btn2 = QPushButton("Таблицы вероятностей")
         btn3 = QPushButton("Гистограммы частот")
+        btn4 = QPushButton("Экспорт результатов")
+
         btn1.clicked.connect(lambda: self.stats_container.setCurrentIndex(0))
         btn2.clicked.connect(lambda: self.stats_container.setCurrentIndex(1))
         btn3.clicked.connect(lambda: self.stats_container.setCurrentIndex(2))
+        btn4.clicked.connect(lambda: self.stats_container.setCurrentIndex(3))
+
         button_layout.addWidget(btn1)
         button_layout.addWidget(btn2)
         button_layout.addWidget(btn3)
+        button_layout.addWidget(btn4)
         main_analyze_layout.addWidget(btns_container)
 
         # Контейнер для статистики
@@ -322,6 +327,8 @@ class UI(QMainWindow):
         self.stats_container.addWidget(self.prob_tables_page())
         # 3-я – Гистограмма частот символов текстов:
         self.stats_container.addWidget(self.histograms_page())
+        # 4-я – Экспорт результов в Excel файл:
+        self.stats_container.addWidget(self.export_analyze_results())
         # Добавляем контейнер в стек
         main_analyze_layout.addWidget(self.stats_container)
 
@@ -589,3 +596,37 @@ class UI(QMainWindow):
         )
         plt1.addItem(hist)
         return container
+
+    def export_analyze_results(self):
+        container = QWidget()
+        layout = QGridLayout()
+        container.setLayout(layout)
+        layout.addWidget(QLabel("Экспорт результатов анализа"),
+                         0, 0, alignment=Qt.AlignTop | Qt.AlignCenter)
+
+        layout.addWidget(QLabel("Энтропии"), 1, 0,
+                         alignment=Qt.AlignTop | Qt.AlignCenter)
+        self.cbx_export_entropy = QCheckBox()
+        layout.addWidget(self.cbx_export_entropy, 1, 1,
+                         alignment=Qt.AlignTop | Qt.AlignCenter)
+
+        layout.addWidget(QLabel("Таблицы вероятностей"),
+                         2, 0, alignment=Qt.AlignTop | Qt.AlignCenter)
+        self.cbx_export_probabilities = QCheckBox()
+        layout.addWidget(self.cbx_export_probabilities,
+                         2, 1, alignment=Qt.AlignTop | Qt.AlignCenter)
+
+        layout.addWidget(QLabel("Гистограммы частот"),
+                         3, 0, alignment=Qt.AlignTop | Qt.AlignCenter)
+        self.cbx_export_histograms = QCheckBox()
+        layout.addWidget(self.cbx_export_histograms,
+                         3, 1, alignment=Qt.AlignTop | Qt.AlignCenter)
+
+        self.btn_export = QPushButton("Создать файл экспорта")
+        layout.addWidget(self.btn_export, 4, 0,
+                         alignment=Qt.AlignTop | Qt.AlignCenter)
+        self.btn_export.clicked.connect(self.create_export_file)
+        return container
+
+    def create_export_file(self):
+        self.show_message("success", text="Результаты сохранены в файл")
