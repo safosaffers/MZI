@@ -435,9 +435,9 @@ class UI(QMainWindow):
                 condi_prob_B, 1, 1, alignment=Qt.AlignCenter)
 
         # Добавляем 1-3 страницы:
-        tab.addTab(prob_container, "Безусловные вероятности")
-        tab.addTab(joint_prob_container, "Совместные вероятности")
-        tab.addTab(condi_prob_container, "Условные вероятности")
+        tab.addTab(prob_container, "Безусловные")
+        tab.addTab(joint_prob_container, "Совместные")
+        tab.addTab(condi_prob_container, "Условные")
 
         # Все данные вероятностей при паре текстов A и B
         if self.sa1.file_path and self.sa2.file_path:
@@ -462,7 +462,7 @@ class UI(QMainWindow):
                 joint_prob_BA, 1, 1, alignment=Qt.AlignCenter)
 
             tab.addTab(joint_prob_two_container,
-                       "Совместные вероятности пары текстов")
+                       "Совместные пары текстов")
 
             # 5 страница — условные вероятности пары текстов
             condi_prob_two_container = QWidget()
@@ -484,7 +484,7 @@ class UI(QMainWindow):
                 condi_prob_BA, 1, 1, alignment=Qt.AlignCenter)
 
             tab.addTab(condi_prob_two_container,
-                       "Условные вероятности пары текстов")
+                       "Условные пары текстов")
 
         return tab
 

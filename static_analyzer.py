@@ -4,19 +4,22 @@
 import numpy as np
 
 USE_START_AND_EOF_SYMBOL = True
+USE_SHORT_ALPHABET_FOR_DEBUG = False
 
 
 class StaticAnalyzer:
     def __init__(self):
         self.alphabet_number = 0
-        # self.alphabet_len = 35  # 34 +1
-        # self.alphabet = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя "
-        if USE_START_AND_EOF_SYMBOL:
-            self.alphabet_len = 4
-            self.alphabet = "Øаб "
+        if USE_SHORT_ALPHABET_FOR_DEBUG:
+            if USE_START_AND_EOF_SYMBOL:
+                self.alphabet_len = 4
+                self.alphabet = "Øаб "
+            else:
+                self.alphabet_len = 3
+                self.alphabet = "аб "
         else:
-            self.alphabet_len = 3
-            self.alphabet = "аб "
+            self.alphabet_len = 35  # 34 +1
+            self.alphabet = "Øабвгдеёжзийклмнопрстуфхцчшщъыьэюя "
         self.alphabet_name = "rus_34"
         self.file_path = ""
         self.text_len = -1  # текс не был загружен
@@ -180,7 +183,6 @@ class StaticAnalyzer:
 
 # Вычисление совместной вероятности для пары текстов
 
-
     def calculate_joint_prob_with(self, other):
         if self.alphabet_number != other.alphabet_number:
             raise ValueError("Тексты должны иметь одинаковый алфавит!.")
@@ -242,31 +244,26 @@ class StaticAnalyzer:
         conditional_prob = self.condi_prob
 
         markov_entropy = 0
-        markov_entropy2 = 0
         for i in range(self.alphabet_len):
             for j in range(self.alphabet_len):
-                if joint_prob[j][i] != 0 and conditional_prob[j][i] != 0:
-                    markov_entropy -= joint_prob[j][i] * \
-                        np.log2(conditional_prob[j][i])
-                    # markov_entropy2 -= self.prob[i]*conditional_prob[j][i] * \
-                    #     np.log2(conditional_prob[j][i])
-        print(f"markov_entropy = {markov_entropy}")
-        print(f"markov_entropy2 = {markov_entropy2}")
+                if conditional_prob[i][j] != 0:
+                    markov_entropy -= self.prob[j]*conditional_prob[i][j] * \
+                        np.log2(conditional_prob[i][j])
         self.markov_entropy = markov_entropy
         return self.markov_entropy
 
 # Энтропия Марковского процесса для двух текстов
     def markov_entropy_with(self, other):
-        joint_prob = self.calculate_joint_prob_with(other)
+        # joint_prob = self.calculate_joint_prob_with(other)
         conditional_prob = self.calculate_conditional_prob_with(
             other)
 
         markov_entropy = 0
         for i in range(self.alphabet_len):
             for j in range(other.alphabet_len):
-                if joint_prob[j][i] != 0 and conditional_prob[j][i] != 0:
-                    markov_entropy -= joint_prob[j][i] * \
-                        np.log2(conditional_prob[j][i])
+                if conditional_prob[i][j] != 0:
+                    markov_entropy -= self.prob[j]*conditional_prob[i][j] * \
+                        np.log2(conditional_prob[i][j])
 
         return markov_entropy
 
