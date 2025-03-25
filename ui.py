@@ -151,13 +151,15 @@ class UI(QMainWindow):
         self.soundError = QSoundEffect()
         self.soundError.setSource(
             QUrl.fromLocalFile(".//sounds//snd_error.wav"))
+        self.soundError.setVolume(0.5)
         self.soundWarning = QSoundEffect()
         self.soundWarning.setSource(
             QUrl.fromLocalFile(".//sounds//snd_warning.wav"))
+        self.soundWarning.setVolume(0.5)
         self.soundSuccess = QSoundEffect()
         self.soundSuccess.setSource(
             QUrl.fromLocalFile(".//sounds//snd_success.wav"))
-
+        self.soundSuccess.setVolume(0.5)
         # Устанавливаем общий макет в контейнер
         combined_container.setLayout(combined_layout)
 
