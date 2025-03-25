@@ -4,7 +4,9 @@
 используя таблицы и рисунки(гистограммы).
 """
 
+# Подключение стилей
 from Custom_Widgets.QCustomModals import QCustomModals
+# Подключение основной библиотеки анализатора
 from static_analyzer import StaticAnalyzer
 import pyqtgraph as pg
 from PySide6.QtCore import *
@@ -215,11 +217,11 @@ class UI(QMainWindow):
 
         # Если текст был укорочен, сообщаем об этом
         if trimmed_to_max_len:
-            self.show_msg_text_was_trimmed(QTextEdit_num)
+            self.show_message("warning")
         elif other_sa.text_len > target_sa.text_len:
             other_sa.trimm_text_to_n(target_sa.text_len)
             other_edit.setText(''.join(other_sa.text_in_alphabet))
-            self.show_msg_text_was_trimmed(2 if QTextEdit_num == 1 else 1)
+            self.show_message("warning")
 
     def apply_shadow_effect(self, modal):
         shadow_effect = QGraphicsDropShadowEffect(modal)
@@ -228,51 +230,51 @@ class UI(QMainWindow):
         shadow_effect.setOffset(0, 0)
         modal.setGraphicsEffect(shadow_effect)
 
-    def show_msg_success_analyze(self):
-        kwargs = {
-            "title": "Успех",
-            "description": "Анализ успешно завершён и\n доступен на вкладке \"Результаты анализа\"",
-            "position": "top-center",
-            "parent": self,
-            "animationDuration": 3000  # set to zero if you want you modal to not auto-close
-        }
-        modal = QCustomModals.SuccessModal(**kwargs)
-        self.apply_shadow_effect(modal)
-        modal.show()
-        self.soundSuccess.play()
+    def show_message(self, status, title=None, text=None):
+        if title is None:
+            title = {
+                "success": "Успех",
+                "warning": "Предупреждение",
+                "error": "Ошибка"
+            }.get(status, "Сообщение")
 
-    def show_msg_text_was_trimmed(self, num=-1):
-        if num == -1:
-            return
-        kwargs = {
-            "title": "Предупреждение",
-            "description": f"Текст {'A' if num == 1 else 'B'} был урезан для соответствия длине текста {'B' if num == 1 else 'A'}.",
-            "position": "top-center",
-            "parent": self,
-            "animationDuration": 3000  # set to zero if you want you modal to not auto-close
-        }
-        modal = QCustomModals.WarningModal(**kwargs)
-        self.apply_shadow_effect(modal)
-        modal.show()
-        self.soundWarning.play()
+        if text is None:
+            text = {
+                "success": "Анализ успешно завершён и\n доступен на вкладке \"Результаты анализа\"",
+                "warning": "Один из текстов был урезан",
+                "error": "Пожалуйста, выберите файл(ы) для анализа"
+            }.get(status, "Сообщение")
 
-    def show_msg_file_not_chosen(self):
+        modal_class = {
+            "success": QCustomModals.SuccessModal,
+            "warning": QCustomModals.WarningModal,
+            "error": QCustomModals.ErrorModal
+        }.get(status, QCustomModals.WarningModal)
+
         kwargs = {
-            "title": "Ошибка",
-            "description": "Пожалуйста, выберите файл(ы) для анализа",
+            "title": title,
+            "description": text,
             "position": "top-center",
             "parent": self,
-            "animationDuration": 3000  # set to zero if you want you modal to not auto-close
+            "animationDuration": 3000
         }
-        modal = QCustomModals.ErrorModal(**kwargs)
+
+        # Создаем и показываем модальное окно
+        modal = modal_class(**kwargs)
         self.apply_shadow_effect(modal)
         modal.show()
-        self.soundError.play()
+
+        sound = {
+            "success": self.soundSuccess,
+            "warning": self.soundWarning,
+            "error": self.soundError
+        }.get(status, self.soundError)
+        sound.play()
 
     def start_analyze(self):
         # Выполняем анализ
         if self.sa1.file_path == "" and self.sa2.file_path == "":
-            self.show_msg_file_not_chosen()
+            self.show_message("error")
         else:
             if self.sa1.file_path != "":
                 self.sa1.single_text_analyze()
@@ -281,7 +283,7 @@ class UI(QMainWindow):
 
             # Страница выбора файлов для анализа
             self.analyze_results_page()
-            self.show_msg_success_analyze()
+            self.show_message("success")
 
     def analyze_results_page(self):
         # Удаляем старые результаты анализа, если он производился
@@ -568,14 +570,14 @@ class UI(QMainWindow):
         return container
 
     def create_histogram(self, current_sa):
-        histogram_widget = pg.GraphicsLayoutWidget()
-        histogram_widget.setBackground(QColor(33, 46, 74))
+        container = pg.GraphicsLayoutWidget()
+        container.setBackground(QColor(33, 46, 74))
         labels = self.get_labels_from_alphabet(current_sa)
         xdict = dict(enumerate(labels))
         stringaxis = pg.AxisItem(orientation='bottom')
         stringaxis.setTicks([xdict.items()])
 
-        plt1 = histogram_widget.addPlot(axisItems={'bottom': stringaxis})
+        plt1 = container.addPlot(axisItems={'bottom': stringaxis})
         plt1.setLimits(
             xMin=-2, xMax=current_sa.alphabet_len, minXRange=1, maxXRange=100,
             yMin=0, yMax=max(current_sa.frequencies)*1.01, minYRange=1, maxYRange=100
@@ -586,4 +588,4 @@ class UI(QMainWindow):
             pen=QColor(33, 46, 74), brush=QColor(198, 104, 51)
         )
         plt1.addItem(hist)
-        return histogram_widget
+        return container
