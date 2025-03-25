@@ -3,12 +3,20 @@
 """
 import numpy as np
 
+USE_START_AND_EOF_SYMBOL = True
+
 
 class StaticAnalyzer:
     def __init__(self):
         self.alphabet_number = 0
-        self.alphabet_len = 35  # 34 +1
-        self.alphabet = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя "
+        # self.alphabet_len = 35  # 34 +1
+        # self.alphabet = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя "
+        if USE_START_AND_EOF_SYMBOL:
+            self.alphabet_len = 4
+            self.alphabet = "Øаб "
+        else:
+            self.alphabet_len = 3
+            self.alphabet = "аб "
         self.alphabet_name = "rus_34"
         self.file_path = ""
         self.text_len = -1  # текс не был загружен
@@ -31,10 +39,11 @@ class StaticAnalyzer:
         self.count_markov_entropy()
 
     def set_alphabet(self, alphabet_name):
-        rus_34 = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя "
-        rus_32 = "абвгдежзийклмнопрстуфхцчшщъыьэюя"
-        lat_27 = "abcdefghijklmnopqrstuvwxyz "
-        lat_25 = "abcdefghiklmnopqrstuvwxyz"
+        if USE_START_AND_EOF_SYMBOL:
+            rus_34 = "Øабвгдеёжзийклмнопрстуфхцчшщъыьэюя "
+            rus_32 = "Øабвгдежзийклмнопрстуфхцчшщъыьэюя"
+            lat_27 = "Øabcdefghijklmnopqrstuvwxyz "
+            lat_25 = "Øabcdefghiklmnopqrstuvwxyz"
         self.alphabet_name = alphabet_name
         match alphabet_name:
             case "rus_34":
@@ -45,7 +54,7 @@ class StaticAnalyzer:
                 self.alphabet = lat_27
             case "lat_25":
                 self.alphabet = lat_25
-        self.alphabet_len = len(self.alphabet)+1
+        self.alphabet_len = len(self.alphabet)
 
     def clear_text_data(self):
         self.text_len = -1
@@ -57,9 +66,11 @@ class StaticAnalyzer:
     def process_text_forms(self, file_path, max_len=-1):
         self.clear_text_data()
         self.file_path = file_path
-        self.text_in_alphabet_numbers.append(0)  # начало файла
-        self.text_in_alphabet.append('Ø')
-        self.text_len = 2  # добавляем два символа начало и конец файла
+        self.text_len = 0
+        if USE_START_AND_EOF_SYMBOL:
+            self.text_in_alphabet_numbers.append(0)  # начало файла
+            self.text_in_alphabet.append('Ø')
+            self.text_len = 2  # добавляем два символа начало и конец файла
         with open(file_path, 'r', encoding='utf-8') as f:
             while (max_len == -1 or self.text_len < max_len) and (char := f.read(1)):
                 self.text.append(char)
@@ -67,21 +78,27 @@ class StaticAnalyzer:
                 if char in self.alphabet:
                     self.text_in_alphabet.append(char)
                     self.text_in_alphabet_numbers.append(
-                        self.alphabet.find(char)+1)
+                        self.alphabet.find(char))  # +1
                     self.text_len += 1
             # если остался нерпочитанный символ и он пренадлежит алфавиту
             # то мы сообщим о том, что текст был урезан
             char = f.read(1)
             trimmed_to_max_len = bool(char in self.alphabet and char != "")
-        self.text_in_alphabet_numbers.append(0)  # конец файла
-        self.text_in_alphabet.append('Ø')
+        if USE_START_AND_EOF_SYMBOL:
+            self.text_in_alphabet_numbers.append(0)  # конец файла
+            self.text_in_alphabet.append('Ø')
         return trimmed_to_max_len
 
     def trimm_text_to_n(self, n):
-        self.text = self.text[:(n-1)]+['Ø']
-        self.text_in_alphabet = self.text_in_alphabet[:(n-1)]+['Ø']
-        self.text_in_alphabet_numbers = self.text_in_alphabet_numbers[:(
-            n-1)]+[0]
+        if USE_START_AND_EOF_SYMBOL:
+            self.text = self.text[:(n-1)]+['Ø']
+            self.text_in_alphabet = self.text_in_alphabet[:(n-1)]+['Ø']
+            self.text_in_alphabet_numbers = self.text_in_alphabet_numbers[:(
+                n-1)]+[0]
+        else:
+            self.text = self.text[:n]
+            self.text_in_alphabet = self.text_in_alphabet[:n]
+            self.text_in_alphabet_numbers = self.text_in_alphabet_numbers[:n]
 
 #################################################################################
 #                       Методы для вычисления вероятностей                      #
@@ -105,14 +122,18 @@ class StaticAnalyzer:
     def joint_prob_and_frequencies(self):
         joint_frequencies = [
             [0 for _ in range(self.alphabet_len)] for _ in range(self.alphabet_len)]  # +1
-        total_pairs = 1  # пары начала/конца и пара начало-конец
+        total_pairs = 0
+        if USE_START_AND_EOF_SYMBOL:
+            total_pairs = 1  # пара начало-конец
         text_len = len(self.text_in_alphabet_numbers)
         for i in range(text_len-1):
             char_1 = self.text_in_alphabet_numbers[i]
-            char_2 = self.text_in_alphabet_numbers[i+1]  # tab
+            char_2 = self.text_in_alphabet_numbers[i+1]
             joint_frequencies[char_1][char_2] += 1
             total_pairs += 1
-        joint_frequencies[0][0] = 1  # "Закольцовывание" начала и конца файла
+        if USE_START_AND_EOF_SYMBOL:
+            # "Закольцовывание" начала и конца файла
+            joint_frequencies[0][0] = 1
         joint_prob = [
             [freq / total_pairs if total_pairs != 0 else 0 for freq in row]
             for row in joint_frequencies
@@ -221,11 +242,16 @@ class StaticAnalyzer:
         conditional_prob = self.condi_prob
 
         markov_entropy = 0
+        markov_entropy2 = 0
         for i in range(self.alphabet_len):
             for j in range(self.alphabet_len):
-                if joint_prob[i][j] != 0 and conditional_prob[i][j] != 0:
-                    markov_entropy -= joint_prob[i][j] * \
-                        np.log2(conditional_prob[i][j])
+                if joint_prob[j][i] != 0 and conditional_prob[j][i] != 0:
+                    markov_entropy -= joint_prob[j][i] * \
+                        np.log2(conditional_prob[j][i])
+                    # markov_entropy2 -= self.prob[i]*conditional_prob[j][i] * \
+                    #     np.log2(conditional_prob[j][i])
+        print(f"markov_entropy = {markov_entropy}")
+        print(f"markov_entropy2 = {markov_entropy2}")
         self.markov_entropy = markov_entropy
         return self.markov_entropy
 
@@ -238,9 +264,9 @@ class StaticAnalyzer:
         markov_entropy = 0
         for i in range(self.alphabet_len):
             for j in range(other.alphabet_len):
-                if joint_prob[i][j] != 0 and conditional_prob[i][j] != 0:
-                    markov_entropy -= joint_prob[i][j] * \
-                        np.log2(conditional_prob[i][j])
+                if joint_prob[j][i] != 0 and conditional_prob[j][i] != 0:
+                    markov_entropy -= joint_prob[j][i] * \
+                        np.log2(conditional_prob[j][i])
 
         return markov_entropy
 

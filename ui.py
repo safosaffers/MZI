@@ -362,7 +362,7 @@ class UI(QMainWindow):
 
     def get_labels_from_alphabet(self, sa):
         alp_list = list(sa.alphabet)
-        labels = ["Ø"]
+        labels = []
         if sa.alphabet[-1] == ' ':
             labels += alp_list[:-1] + ["'_'"]
         else:
