@@ -690,47 +690,60 @@ class UI(QMainWindow):
                 worksheet.set_column(0, 1, cell_w)
             else:
                 worksheet.set_column(0, len(data[0]), cell_w)
+            bg_lbl_format = workbook.add_format(
+                {'bg_color': '#5690d6', 'border': 1})
 
+            # Заголовки для данных
             if not is_matrix:
-                worksheet.write(0, 1, "p(a_i)")
+                worksheet.write(0, 1, "p(a_i)", bg_lbl_format)
             for lbl, i in zip(labels, range(len(labels))):
-                worksheet.write(i+1, 0, lbl)
+                worksheet.write(i+1, 0, lbl, bg_lbl_format)
                 if is_matrix:
-                    worksheet.write(0, i+1, lbl)
+                    worksheet.write(0, i+1, lbl, bg_lbl_format)
+
+            bg_data_format = workbook.add_format(
+                {'bg_color': '#95b3d7', 'border': 1})
+            for k in range(len(data)):
+                if is_matrix:
+                    for l in range(len(data[k])):
+                        worksheet.write(
+                            k+1, l+1, round(data[k][l], 3), bg_data_format)
+                else:
+                    worksheet.write(
+                        k+1, 1, round(data[k], 3), bg_data_format)
 
         if self.sa1.file_path:
             write_table_to_workbook(
-                "Безусловные вероятности A", self.sa1.prob)
+                "P(A)", self.sa1.prob)
             write_table_to_workbook(
-                "Совместыные вероятности A", self.sa1.joint_prob)
+                "P(A,A)", self.sa1.joint_prob)
             write_table_to_workbook(
-                "Условные вероятности A", self.sa1.cond_prob)
+                "P(A|A)", self.sa1.cond_prob)
 
         if self.sa2.file_path:
-            pass
+            write_table_to_workbook(
+                "P(B)", self.sa2.prob)
+            write_table_to_workbook(
+                "P(B,B)", self.sa2.joint_prob)
+            write_table_to_workbook(
+                "P(B|B)", self.sa2.cond_prob)
 
         if self.sa2.file_path and self.sa1.file_path:
-            pass
-        # # Размеры заголовков
-        # table.horizontalHeader().setDefaultSectionSize(cell_w)
-        # table.verticalHeader().setDefaultSectionSize(cell_h)
-        # # запрет редактирования значений таблицы
-        # table.setEditTriggers(
-        #     QAbstractItemView.NoEditTriggers)
-        # for k in range(len(data)):
-        #     if is_matrix:
-        #         for l in range(len(data[k])):
-        #             table.setItem(k, l, QTableWidgetItem(
-        #                 str(round(data[k][l], 3))))
-        #     else:
-        #         table.setItem(k, 0, QTableWidgetItem(str(round(data[k], 3))))
-        # return table
+            # Запись совместных вероятностей A и B
+            write_table_to_workbook("P(A,B)",
+                                    self.sa1.calculate_conditional_prob_with(self.sa2))
 
-        # for idx, (label, data) in enumerate(entropy_results):
-        #     # Заголовок в первый столбец
-        #     entropy_worksheet.write(idx, 0, label)
-        #     # Значение во второй столбец
-        #     entropy_worksheet.write(idx, 1, data)
+            # Запись совместных вероятностей B и A
+            write_table_to_workbook("P(B,A)",
+                                    self.sa2.calculate_conditional_prob_with(self.sa1))
+
+            # Запись условных вероятностей A при тексте B
+            write_table_to_workbook("P(A|B)",
+                                    self.sa1.calculate_conditional_prob_with(self.sa2))
+
+            # Запись условных вероятностей B при тексте A
+            write_table_to_workbook("P(B|A)",
+                                    self.sa2.calculate_conditional_prob_with(self.sa1))
 
     def create_export_file(self):
         time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
