@@ -30,7 +30,7 @@ class StaticAnalyzer:
         self.frequencies = []
         self.joint_prob = []
         self.joint_frequencies = []
-        self.condi_prob = []
+        self.cond_prob = []
         self.entropy = 0
         self.markov_entropy = 0
 
@@ -153,7 +153,7 @@ class StaticAnalyzer:
                 if self.prob[j] != 0:
                     result[i][j] = self.joint_prob[j][i] / \
                         self.prob[j]
-        self.condi_prob = result
+        self.cond_prob = result
 
 # Проверка корректности вычислений
     def check_prob(self):
@@ -171,7 +171,7 @@ class StaticAnalyzer:
               < 1E-6 else " — некорректно")
 
         # Проверка условных вероятностей:
-        total_cond = [sum(self.condi_prob[i][j] for i in range(
+        total_cond = [sum(self.cond_prob[i][j] for i in range(
             self.alphabet_len)) for j in range(self.alphabet_len)]
         # Учитываем случай, когда сумма равна 0
         is_correct_cond = all(abs(1. - i) < 1E-6 or i == 0 for i in total_cond)
@@ -241,7 +241,7 @@ class StaticAnalyzer:
         self.joint_prob_and_frequencies()
         joint_prob = self.joint_prob
         self.condition_prob()
-        conditional_prob = self.condi_prob
+        conditional_prob = self.cond_prob
 
         markov_entropy = 0
         for i in range(self.alphabet_len):

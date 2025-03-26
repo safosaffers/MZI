@@ -417,7 +417,7 @@ class UI(QMainWindow):
             condi_prob_layout.addWidget(
                 QLabel("Условные вероятности текста A"), 0, 0, alignment=Qt.AlignCenter)
             condi_prob_A = self.create_table_with_data(
-                self.sa1.condi_prob, labels)
+                self.sa1.cond_prob, labels)
             condi_prob_layout.addWidget(
                 condi_prob_A, 1, 0, alignment=Qt.AlignCenter)
 
@@ -439,7 +439,7 @@ class UI(QMainWindow):
             condi_prob_layout.addWidget(
                 QLabel("Условные вероятности текста B"), 0, 1, alignment=Qt.AlignCenter)
             condi_prob_B = self.create_table_with_data(
-                self.sa2.condi_prob, labels)
+                self.sa2.cond_prob, labels)
             condi_prob_layout.addWidget(
                 condi_prob_B, 1, 1, alignment=Qt.AlignCenter)
 
@@ -627,7 +627,7 @@ class UI(QMainWindow):
                          3, 1, alignment=Qt.AlignTop | Qt.AlignCenter)
 
         self.btn_export = QPushButton("Создать файл экспорта")
-        layout.addWidget(self.btn_export, 4, 0,
+        layout.addWidget(self.btn_export, 4, 0, 1, 2,
                          alignment=Qt.AlignTop | Qt.AlignCenter)
         self.btn_export.clicked.connect(self.create_export_file)
         return container
@@ -674,6 +674,64 @@ class UI(QMainWindow):
             # Значение во второй столбец
             entropy_worksheet.write(idx, 1, data)
 
+    def probabilities_tables_worksheet(self, workbook):
+
+        if self.sa1.file_path:
+            labels = self.get_labels_from_alphabet(self.sa1)
+        elif self.sa2.file_path:
+            labels = self.get_labels_from_alphabet(self.sa2)
+
+        def write_table_to_workbook(title, data, cell_w=5, cell_h=20):
+            worksheet = workbook.add_worksheet(title)
+            is_matrix = isinstance(data[0], list)
+            cell_w = cell_w if is_matrix else 2*cell_w
+            # Размер таблицы
+            if not is_matrix:
+                worksheet.set_column(0, 1, cell_w)
+            else:
+                worksheet.set_column(0, len(data[0]), cell_w)
+
+            if not is_matrix:
+                worksheet.write(0, 1, "p(a_i)")
+            for lbl, i in zip(labels, range(len(labels))):
+                worksheet.write(i+1, 0, lbl)
+                if is_matrix:
+                    worksheet.write(0, i+1, lbl)
+
+        if self.sa1.file_path:
+            write_table_to_workbook(
+                "Безусловные вероятности A", self.sa1.prob)
+            write_table_to_workbook(
+                "Совместыные вероятности A", self.sa1.joint_prob)
+            write_table_to_workbook(
+                "Условные вероятности A", self.sa1.cond_prob)
+
+        if self.sa2.file_path:
+            pass
+
+        if self.sa2.file_path and self.sa1.file_path:
+            pass
+        # # Размеры заголовков
+        # table.horizontalHeader().setDefaultSectionSize(cell_w)
+        # table.verticalHeader().setDefaultSectionSize(cell_h)
+        # # запрет редактирования значений таблицы
+        # table.setEditTriggers(
+        #     QAbstractItemView.NoEditTriggers)
+        # for k in range(len(data)):
+        #     if is_matrix:
+        #         for l in range(len(data[k])):
+        #             table.setItem(k, l, QTableWidgetItem(
+        #                 str(round(data[k][l], 3))))
+        #     else:
+        #         table.setItem(k, 0, QTableWidgetItem(str(round(data[k], 3))))
+        # return table
+
+        # for idx, (label, data) in enumerate(entropy_results):
+        #     # Заголовок в первый столбец
+        #     entropy_worksheet.write(idx, 0, label)
+        #     # Значение во второй столбец
+        #     entropy_worksheet.write(idx, 1, data)
+
     def create_export_file(self):
         time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         workbook = xlsxwriter.Workbook(f"analyze_result_{time}.xlsx")
@@ -681,6 +739,7 @@ class UI(QMainWindow):
         # Информация по энтропии
         if self.cbx_export_entropy.isChecked():
             self.add_entropy_worksheet(workbook)
-
+        if self.cbx_export_probabilities.isChecked():
+            self.probabilities_tables_worksheet(workbook)
         workbook.close()
         self.show_message("success", text="Результаты сохранены в файл")
