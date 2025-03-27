@@ -5,7 +5,9 @@
 """
 
 # Подключение стилей
+from PySide6.QtCore import QEasingCurve
 from Custom_Widgets.QCustomModals import QCustomModals
+from Custom_Widgets.QCustomCheckBox import QCustomCheckBox
 # Подключение основной библиотеки анализатора
 from static_analyzer import StaticAnalyzer
 import pyqtgraph as pg
@@ -29,10 +31,10 @@ class UI(QMainWindow):
         self.centerOnScreen()
 
         # Центральный виджет
-        central_widget = QWidget()
+        self.central_widget = QWidget()
         layout = QVBoxLayout()
-        central_widget.setLayout(layout)
-        self.setCentralWidget(central_widget)
+        self.central_widget.setLayout(layout)
+        self.setCentralWidget(self.central_widget)
 
         # Кнопки переключения окон (этапов)
         button_layout = QHBoxLayout()
@@ -601,39 +603,64 @@ class UI(QMainWindow):
         plt1.addItem(hist)
         return container, hist
 
+    def apply_custom_style(self, checkbox):
+        checkbox.customizeQCustomCheckBox(
+            bgColor="#c3c3c3",
+            circlecolor="#fff",
+            activecolor="#17a8e3",
+            animationEasingCurve=QEasingCurve.Linear,
+            animationDuration=200
+        )
+
     def export_analyze_results(self):
+        # Создаем контейнер и макет
         container = QWidget()
         layout = QGridLayout()
         container.setLayout(layout)
+
+        # Заголовок
         layout.addWidget(QLabel("Экспорт результатов анализа в файл Excel"),
                          0, 0, 1, 2, alignment=Qt.AlignTop | Qt.AlignCenter)
 
-        layout.addWidget(QLabel("Энтропии"), 1, 0,
-                         alignment=Qt.AlignTop | Qt.AlignCenter)
-        self.cbx_export_entropy = QCheckBox()
-        self.cbx_export_entropy.setChecked(True)
-        layout.addWidget(self.cbx_export_entropy, 1, 1,
-                         alignment=Qt.AlignTop | Qt.AlignCenter)
+        # Список меток и соответствующих им чекбоксов
+        options = [
+            ("Энтропии", "cbx_export_entropy"),
+            ("Таблицы вероятностей", "cbx_export_probabilities"),
+            ("Гистограммы частот", "cbx_export_histograms")
+        ]
 
-        layout.addWidget(QLabel("Таблицы вероятностей"),
-                         2, 0, alignment=Qt.AlignTop | Qt.AlignCenter)
-        self.cbx_export_probabilities = QCheckBox()
-        self.cbx_export_probabilities.setChecked(True)
-        layout.addWidget(self.cbx_export_probabilities,
-                         2, 1, alignment=Qt.AlignTop | Qt.AlignCenter)
+        # Создаем фрейм для чекбоксов
+        self.frame = QFrame(self.central_widget)
+        self.frame.setObjectName(u"frame")
+        self.frame.setFrameShape(QFrame.StyledPanel)
+        self.frame.setFrameShadow(QFrame.Raised)
 
-        layout.addWidget(QLabel("Гистограммы частот"),
-                         3, 0, alignment=Qt.AlignTop | Qt.AlignCenter)
-        self.cbx_export_histograms = QCheckBox()
-        self.cbx_export_histograms.setChecked(True)
+        # Добавляем метки и чекбоксы
+        for row, (label_text, checkbox_name) in enumerate(options, start=1):
+            label = QLabel(label_text)
+            checkbox = QCustomCheckBox(self.frame)
+            checkbox.setChecked(True)
+            self.apply_custom_style(checkbox)
 
-        layout.addWidget(self.cbx_export_histograms,
-                         3, 1, alignment=Qt.AlignTop | Qt.AlignCenter)
+            # Устанавливаем минимальные размеры для чекбокса
+            # Настройте размеры по необходимости
+            checkbox.setMinimumSize(80, 30)
 
+            # Добавляем в макет
+            layout.addWidget(
+                label, row, 0, alignment=Qt.AlignTop | Qt.AlignCenter)
+            layout.addWidget(checkbox, row, 1,
+                             alignment=Qt.AlignTop | Qt.AlignCenter)
+
+            # Добавляем чекбокс как атрибут класса
+            setattr(self, checkbox_name, checkbox)
+
+        # Кнопка экспорта
         self.btn_export = QPushButton("Создать файл экспорта")
-        layout.addWidget(self.btn_export, 4, 0, 1, 2,
-                         alignment=Qt.AlignTop | Qt.AlignCenter)
         self.btn_export.clicked.connect(self.create_export_files)
+        layout.addWidget(self.btn_export, len(options) + 1, 0, 1, 2,
+                         alignment=Qt.AlignTop | Qt.AlignCenter)
+
         return container
 
     def add_entropy_worksheet(self, workbook):
