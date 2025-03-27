@@ -9,12 +9,14 @@ from Custom_Widgets.QCustomModals import QCustomModals
 # Подключение основной библиотеки анализатора
 from static_analyzer import StaticAnalyzer
 import pyqtgraph as pg
+import pyqtgraph.exporters as export
 from PySide6.QtCore import *
 from PySide6.QtWidgets import *
 from PySide6.QtGui import *
 from PySide6.QtMultimedia import QSoundEffect
 from datetime import datetime
 import xlsxwriter
+import os
 
 
 class UI(QMainWindow):
@@ -547,7 +549,8 @@ class UI(QMainWindow):
             layout1 = QVBoxLayout()
             layout1.addWidget(
                 QLabel("Гистограмма встречаемости символов текста A"), alignment=Qt.AlignTop)
-            layout1.addWidget(self.create_histogram(self.sa1))
+            hist_cont, self.hist_A = self.create_histogram(self.sa1)
+            layout1.addWidget(hist_cont)
             page1.setLayout(layout1)
             stacked_widget.addWidget(page1)
 
@@ -557,7 +560,8 @@ class UI(QMainWindow):
             layout2 = QVBoxLayout()
             layout2.addWidget(
                 QLabel("Гистограмма встречаемости символов текста B"), alignment=Qt.AlignTop)
-            layout2.addWidget(self.create_histogram(self.sa2))
+            hist_cont, self.hist_B = self.create_histogram(self.sa2)
+            layout2.addWidget(hist_cont)
             page2.setLayout(layout2)
             stacked_widget.addWidget(page2)
 
@@ -595,7 +599,7 @@ class UI(QMainWindow):
             pen=QColor(33, 46, 74), brush=QColor(198, 104, 51)
         )
         plt1.addItem(hist)
-        return container
+        return container, hist
 
     def export_analyze_results(self):
         container = QWidget()
@@ -629,13 +633,16 @@ class UI(QMainWindow):
         self.btn_export = QPushButton("Создать файл экспорта")
         layout.addWidget(self.btn_export, 4, 0, 1, 2,
                          alignment=Qt.AlignTop | Qt.AlignCenter)
-        self.btn_export.clicked.connect(self.create_export_file)
+        self.btn_export.clicked.connect(self.create_export_files)
         return container
 
     def add_entropy_worksheet(self, workbook):
         entropy_worksheet = workbook.add_worksheet("Энтропии")
         entropy_results = []
-
+        bg_lbl_format = workbook.add_format(
+            {'bg_color': '#5690d6', 'border': 1})
+        bg_data_format = workbook.add_format(
+            {'bg_color': '#b5cef3', 'border': 1})
         if self.sa1.file_path:
             entropy_A_results = [
                 ("Энтропия A:", round(self.sa1.entropy, 4)),
@@ -670,9 +677,9 @@ class UI(QMainWindow):
         entropy_worksheet.set_column(0, 0, 30)
         for idx, (label, data) in enumerate(entropy_results):
             # Заголовок в первый столбец
-            entropy_worksheet.write(idx, 0, label)
+            entropy_worksheet.write(idx, 0, label, bg_lbl_format)
             # Значение во второй столбец
-            entropy_worksheet.write(idx, 1, data)
+            entropy_worksheet.write(idx, 1, data, bg_data_format)
 
     def probabilities_tables_worksheet(self, workbook):
 
@@ -702,7 +709,7 @@ class UI(QMainWindow):
                     worksheet.write(0, i+1, lbl, bg_lbl_format)
 
             bg_data_format = workbook.add_format(
-                {'bg_color': '#95b3d7', 'border': 1})
+                {'bg_color': '#b5cef3', 'border': 1})
             for k in range(len(data)):
                 if is_matrix:
                     for l in range(len(data[k])):
@@ -745,14 +752,25 @@ class UI(QMainWindow):
             write_table_to_workbook("P(B|A)",
                                     self.sa2.calculate_conditional_prob_with(self.sa1))
 
-    def create_export_file(self):
+    def create_export_files(self):
         time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-        workbook = xlsxwriter.Workbook(f"analyze_result_{time}.xlsx")
-
+        folder_path = f"Analyze_results/Result_{time}/"
+        workbook = xlsxwriter.Workbook(
+            f"{folder_path}entropy_probabilities.xlsx")
+        os.makedirs(folder_path, exist_ok=True)
         # Информация по энтропии
         if self.cbx_export_entropy.isChecked():
             self.add_entropy_worksheet(workbook)
         if self.cbx_export_probabilities.isChecked():
             self.probabilities_tables_worksheet(workbook)
+        if self.cbx_export_histograms.isChecked():
+            if self.sa1.file_path:
+                hist_A_exp = export.ImageExporter(self.hist_A.scene())
+                hist_A_exp.export(
+                    f'{folder_path}histogramm_A.png')
+            if self.sa2.file_path:
+                hist_B_exp = export.ImageExporter(self.hist_B.scene())
+                hist_B_exp.export(
+                    f'{folder_path}histogramm_B.png')
         workbook.close()
         self.show_message("success", text="Результаты сохранены в файл")
