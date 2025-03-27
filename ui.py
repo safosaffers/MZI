@@ -800,4 +800,5 @@ class UI(QMainWindow):
                 hist_B_exp.export(
                     f'{folder_path}histogramm_B.png')
         workbook.close()
-        self.show_message("success", text="Результаты сохранены в файл")
+        self.show_message(
+            "success", text=f"Результаты успешно сохранены\n и доступны по пути:\n{folder_path}")
