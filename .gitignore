@@ -8,3 +8,5 @@ Analyze_results/
 pth_shots/
 Qss/
 logs/
+src/test_static_analyzer.py
+src/pyqt_examples.py

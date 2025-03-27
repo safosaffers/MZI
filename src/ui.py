@@ -9,7 +9,7 @@ from PySide6.QtCore import QEasingCurve
 from Custom_Widgets.QCustomModals import QCustomModals
 from Custom_Widgets.QCustomCheckBox import QCustomCheckBox
 # Подключение основной библиотеки анализатора
-from static_analyzer import StaticAnalyzer
+from .static_analyzer import StaticAnalyzer
 import pyqtgraph as pg
 import pyqtgraph.exporters as export
 from PySide6.QtCore import *
@@ -19,6 +19,8 @@ from PySide6.QtMultimedia import QSoundEffect
 from datetime import datetime
 import xlsxwriter
 import os
+import sys
+current_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 class UI(QMainWindow):
@@ -155,16 +157,16 @@ class UI(QMainWindow):
 
         # Предварительная загрузка звуковых эффектов
         self.soundError = QSoundEffect()
-        self.soundError.setSource(
-            QUrl.fromLocalFile(".//sounds//snd_error.wav"))
+        self.soundError.setSource(QUrl.fromLocalFile(
+            os.path.join(current_dir, "sounds", "snd_error.wav")))
         self.soundError.setVolume(0.5)
         self.soundWarning = QSoundEffect()
-        self.soundWarning.setSource(
-            QUrl.fromLocalFile(".//sounds//snd_warning.wav"))
+        self.soundWarning.setSource(QUrl.fromLocalFile(
+            os.path.join(current_dir, "sounds", "snd_warning.wav")))
         self.soundWarning.setVolume(0.5)
         self.soundSuccess = QSoundEffect()
-        self.soundSuccess.setSource(
-            QUrl.fromLocalFile(".//sounds//snd_success.wav"))
+        self.soundSuccess.setSource(QUrl.fromLocalFile(
+            os.path.join(current_dir, "sounds", "snd_success.wav")))
         self.soundSuccess.setVolume(0.5)
         # Устанавливаем общий макет в контейнер
         combined_container.setLayout(combined_layout)

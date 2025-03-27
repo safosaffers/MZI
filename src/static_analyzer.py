@@ -2,7 +2,8 @@
 Данный файл определяет методы для вычисления энтропии и вероятностей.
 """
 import numpy as np
-
+import sys
+sys.path.append('../')
 USE_START_AND_EOF_SYMBOL = True
 USE_SHORT_ALPHABET_FOR_DEBUG = False
 
