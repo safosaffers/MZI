@@ -4,3 +4,7 @@ htmlcov
 *.coverage
 env/
 *.xlsx
+Analyze_results/
+pth_shots/
+Qss/
+logs/
