@@ -110,7 +110,11 @@ class UI(QMainWindow):
         # Тексты анализируемых файлов
         texts_layout = QHBoxLayout()
         self.text_edit1 = QTextEdit()
+        self.text_edit1.setPlaceholderText(
+            "Введите текст здесь или загрузите его из файла...")
         self.text_edit2 = QTextEdit()
+        self.text_edit2.setPlaceholderText(
+            "Введите текст здесь или загрузите его из файла...")
         self.text_edit1.textChanged.connect(
             lambda: (self.button_open_file1.setText("Очистить файл") if self.text_edit1.toPlainText() else self.button_open_file1.setText("Загрузить файл")))
         self.text_edit2.textChanged.connect(
