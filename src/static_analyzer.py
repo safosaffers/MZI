@@ -23,7 +23,9 @@ class StaticAnalyzer:
             self.alphabet = "Øабвгдеёжзийклмнопрстуфхцчшщъыьэюя "
         self.alphabet_name = "rus_34"
         self.file_path = ""
-        self.text_len = -1  # текс не был загружен
+        # text_len - длина текста в алфавите,
+        # ==-1 если текст не был загружен
+        self.text_len = -1
         self.text = []
         self.text_in_alphabet_numbers = []
         self.text_in_alphabet = []
@@ -67,40 +69,61 @@ class StaticAnalyzer:
         self.text_in_alphabet_numbers = []
         self.text_in_alphabet = []
 
-    def process_text_forms(self, file_path, max_len=-1):
+    def read_text_from_file(self, file_path):
         self.clear_text_data()
         self.file_path = file_path
-        self.text_len = 0
-        if USE_START_AND_EOF_SYMBOL:
-            self.text_in_alphabet_numbers.append(0)  # начало файла
-            self.text_in_alphabet.append('Ø')
-            self.text_len = 2  # добавляем два символа начало и конец файла
+        self.text = []
         with open(file_path, 'r', encoding='utf-8') as f:
-            while (max_len == -1 or self.text_len < max_len) and (char := f.read(1)):
+            while (char := f.read(1)):
                 self.text.append(char)
-                char = char.lower()
-                if char in self.alphabet:
-                    self.text_in_alphabet.append(char)
-                    self.text_in_alphabet_numbers.append(
-                        self.alphabet.find(char))  # +1
-                    self.text_len += 1
-            # если остался нерпочитанный символ и он пренадлежит алфавиту
-            # то мы сообщим о том, что текст был урезан
-            char = f.read(1)
-            trimmed_to_max_len = bool(char in self.alphabet and char != "")
+
+    def process_text_forms(self, max_len=-1):
+        self.text_in_alphabet = []
+        self.text_in_alphabet_numbers = []
+        self.text_len = 0
+
+        # Добавляем формальный символ начала файла
         if USE_START_AND_EOF_SYMBOL:
-            self.text_in_alphabet_numbers.append(0)  # конец файла
+            self.text_in_alphabet_numbers.append(0)  # Начало файла
             self.text_in_alphabet.append('Ø')
-        return trimmed_to_max_len
+            self.text_len = 2  # Учитываем начало и конец файла
+
+        # Обрабатываем текст
+        n = 0
+        for n in range(len(self.text)):
+            if max_len != -1 and self.text_len >= max_len:
+                break
+            char = (self.text[n]).lower()
+            if (char in self.alphabet):
+                self.text_in_alphabet.append(char)
+                self.text_in_alphabet_numbers.append(self.alphabet.find(char))
+                self.text_len += 1
+        else:
+            n += 1
+        if USE_START_AND_EOF_SYMBOL:
+            self.text_in_alphabet_numbers.append(0)  # Конец файла
+            self.text_in_alphabet.append('Ø')
+
+        self.trimmed_to_max_len = False
+        _len = len(self.text)
+        for i in range(n, _len):
+            if self.text[i] in self.alphabet:
+                self.trimmed_to_max_len = True
+                break
+
+        return self.trimmed_to_max_len
+
+        # Добавляем формальный символ конца файла
+        if USE_START_AND_EOF_SYMBOL:
+            self.text_in_alphabet_numbers.append(0)  # Конец файла
+            self.text_in_alphabet.append('Ø')
 
     def trimm_text_to_n(self, n):
         if USE_START_AND_EOF_SYMBOL:
-            self.text = self.text[:(n-1)]+['Ø']
             self.text_in_alphabet = self.text_in_alphabet[:(n-1)]+['Ø']
             self.text_in_alphabet_numbers = self.text_in_alphabet_numbers[:(
                 n-1)]+[0]
         else:
-            self.text = self.text[:n]
             self.text_in_alphabet = self.text_in_alphabet[:n]
             self.text_in_alphabet_numbers = self.text_in_alphabet_numbers[:n]
 
@@ -183,6 +206,7 @@ class StaticAnalyzer:
 # Для пары текстов:
 
 # Вычисление совместной вероятности для пары текстов
+
 
     def calculate_joint_prob_with(self, other):
         if self.alphabet_number != other.alphabet_number:

@@ -110,9 +110,11 @@ class UI(QMainWindow):
         # Тексты анализируемых файлов
         texts_layout = QHBoxLayout()
         self.text_edit1 = QTextEdit()
-        self.text_edit1.setReadOnly(True)
         self.text_edit2 = QTextEdit()
-        self.text_edit2.setReadOnly(True)
+        self.text_edit1.textChanged.connect(
+            lambda: (self.button_open_file1.setText("Очистить файл") if self.text_edit1.toPlainText() else self.button_open_file1.setText("Загрузить файл")))
+        self.text_edit2.textChanged.connect(
+            lambda: (self.button_open_file2.setText("Очистить файл") if self.text_edit2.toPlainText() else self.button_open_file2.setText("Загрузить файл")))
         texts_layout.addWidget(self.text_edit1)
         texts_layout.addWidget(self.text_edit2)
 
@@ -174,7 +176,14 @@ class UI(QMainWindow):
         # Добавляем контейнер в стек
         self.stacked_widget.addWidget(combined_container)
 
-    # Открытие текстовых файлов и отображение их содержимого
+    # перевод текста в алфавит и цифры, если надо его обрезка, и его отображение
+    def process_loaded_text(self, target_sa, other_sa, target_te, other_te):
+        if target_sa.text:
+            target_sa.process_text_forms(other_sa.text_len)
+            self.process_trimming(target_sa, other_sa, other_te)
+            self.show_text_in_QTextEdit(target_te, target_sa.text_in_alphabet)
+            target_te.setReadOnly(True)
+
     def rb_handle_alphabet_change(self):
         new_alphabet = self.radio_group.checkedButton().alphabet
         if (self.sa1.alphabet_name != new_alphabet or self.sa2.alphabet_name != new_alphabet):
@@ -184,50 +193,66 @@ class UI(QMainWindow):
             self.sa2.clear_text_data()
             self.sa1.set_alphabet(self.radio_group.checkedButton().alphabet)
             self.sa2.set_alphabet(self.radio_group.checkedButton().alphabet)
-            self.show_fileQTextEdit(old_file_path_1, 1)
-            self.show_fileQTextEdit(old_file_path_2, 2)
+
+            if old_file_path_1:
+                self.sa1.read_text_from_file(
+                    old_file_path_1)
+            else:
+                self.read_text_from_QTextEdit(self.text_edit1, self.sa1)
+
+            if old_file_path_2:
+                self.sa2.read_text_from_file(
+                    old_file_path_2)
+            else:
+                self.read_text_from_QTextEdit(self.text_edit2, self.sa2)
+
+            self.process_loaded_text(
+                self.sa1, self.sa2, self.text_edit1, self.text_edit2)
+            self.process_loaded_text(
+                self.sa2, self.sa1, self.text_edit2, self.text_edit1)
+
+    def read_text_from_QTextEdit(self, text_edit, sa):
+        text = text_edit.toPlainText()
+        if text:
+            sa.text = list(text)
+
+    def process_trimming(self, sa, other_sa, other_text_edit):
+        if sa.trimmed_to_max_len:
+            self.show_message("warning")
+        elif other_sa.text_len > sa.text_len:
+            other_sa.trimm_text_to_n(sa.text_len)
+            other_text_edit.setText(''.join(other_sa.text_in_alphabet))
+            self.show_message("warning")
 
     def open_text_file(self, file_num):
         sa = self.sa1 if file_num == 1 else self.sa2
+        other_sa = self.sa2 if file_num == 1 else self.sa1
         text_edit = self.text_edit1 if file_num == 1 else self.text_edit2
+        other_text_edit = self.text_edit2 if file_num == 1 else self.text_edit1
         button = self.button_open_file1 if file_num == 1 else self.button_open_file2
 
         # Если файл уже открыт, очищаем данные
-        if sa.file_path:
+        if sa.text or text_edit.toPlainText():
             sa.clear_text_data()
             text_edit.setText("")
-            button.setText("Открыть файл")
+            button.setText("Загрузить файл")
+            text_edit.setReadOnly(False)
         else:
             # Открываем диалог выбора файла
             file_path, _ = QFileDialog.getOpenFileName(
                 self, "Open Text File", "", "Text Files (*.txt);;All Files (*)")
             if file_path:
                 sa.file_path = file_path
-                self.show_fileQTextEdit(file_path, file_num)
+                # Загружаем текст
+                sa.read_text_from_file(file_path)
+                self.process_loaded_text(
+                    sa, other_sa, text_edit, other_text_edit)
                 button.setText("Очистить файл")
 
-    # Отображение содержимого файла
-    def show_fileQTextEdit(self, file_path, QTextEdit_num):
-        if file_path == "":
-            return
-        target_edit = self.text_edit1 if QTextEdit_num == 1 else self.text_edit2
-        other_edit = self.text_edit2 if QTextEdit_num == 1 else self.text_edit1
-        target_sa = self.sa1 if QTextEdit_num == 1 else self.sa2
-        other_sa = self.sa2 if QTextEdit_num == 1 else self.sa1
-
-        # Загружаем текст
-        trimmed_to_max_len = target_sa.process_text_forms(
-            file_path,  other_sa.text_len)
-        # Отображаем его
-        target_edit.setText(''.join(target_sa.text_in_alphabet))
-
-        # Если текст был укорочен, сообщаем об этом
-        if trimmed_to_max_len:
-            self.show_message("warning")
-        elif other_sa.text_len > target_sa.text_len:
-            other_sa.trimm_text_to_n(target_sa.text_len)
-            other_edit.setText(''.join(other_sa.text_in_alphabet))
-            self.show_message("warning")
+    # Отображение текста в текстовый едитор
+    def show_text_in_QTextEdit(self, text_edit, text):
+        if text:
+            text_edit.setText(''.join(text))
 
     def apply_shadow_effect(self, modal):
         shadow_effect = QGraphicsDropShadowEffect(modal)
@@ -248,7 +273,7 @@ class UI(QMainWindow):
             text = {
                 "success": "Анализ успешно завершён и\n доступен на вкладке \"Результаты анализа\"",
                 "warning": "Один из текстов был урезан",
-                "error": "Пожалуйста, выберите файл(ы) для анализа"
+                "error": "Пожалуйста, выберите файл(ы)\nдля анализа или введите их \nсодержимое в текстовые поля"
             }.get(status, "Сообщение")
 
         modal_class = {
@@ -279,12 +304,21 @@ class UI(QMainWindow):
 
     def start_analyze(self):
         # Выполняем анализ
-        if self.sa1.file_path == "" and self.sa2.file_path == "":
+        if not self.sa1.file_path:
+            self.read_text_from_QTextEdit(self.text_edit1, self.sa1)
+            self.process_loaded_text(
+                self.sa1, self.sa2, self.text_edit1, self.text_edit2)
+        if not self.sa2.file_path:
+            self.read_text_from_QTextEdit(self.text_edit2, self.sa2)
+            self.process_loaded_text(
+                self.sa2, self.sa1, self.text_edit2, self.text_edit1)
+
+        if not self.sa1.text and not self.sa2.text:
             self.show_message("error")
         else:
-            if self.sa1.file_path:
+            if self.sa1.text:
                 self.sa1.single_text_analyze()
-            if self.sa2.file_path:
+            if self.sa2.text:
                 self.sa2.single_text_analyze()
 
             # Страница выбора файлов для анализа
@@ -345,21 +379,21 @@ class UI(QMainWindow):
         stats_layout = QGridLayout()  # Табличный макет
         container.setLayout(stats_layout)
         # Добавляем заголовки и значения в макет
-        if self.sa1.file_path != "":
+        if self.sa1.text:
             stats_layout.addWidget(QLabel("Энтропия A:"), 0, 0)
             stats_layout.addWidget(QLabel(f"{self.sa1.entropy:.4f}"), 0, 1)
 
             stats_layout.addWidget(QLabel("Марковская энтропия H(A|A):"), 1, 0)
             stats_layout.addWidget(
                 QLabel(f"{self.sa1.markov_entropy:.4f}"), 1, 1)
-        if self.sa2.file_path != "":
+        if self.sa2.text:
             stats_layout.addWidget(QLabel("Энтропия B:"), 0, 2)
             stats_layout.addWidget(QLabel(f"{self.sa2.entropy:.4f}"), 0, 3)
 
             stats_layout.addWidget(QLabel("Марковская энтропия H(B|B):"), 1, 2)
             stats_layout.addWidget(
                 QLabel(f"{self.sa2.markov_entropy:.4f}"), 1, 3)
-        if self.sa2.file_path != "" and self.sa1.file_path != "":
+        if self.sa2.text and self.sa1.text:
             stats_layout.addWidget(QLabel("Марковская энтропия H(A|B):"), 2, 0)
             stats_layout.addWidget(
                 QLabel(f"{self.sa1.markov_entropy_with(self.sa2):.4f}"), 2, 1)
@@ -406,7 +440,7 @@ class UI(QMainWindow):
         condi_prob_container.setLayout(condi_prob_layout)
 
         # Все данные вероятностей по одному тексту A
-        if self.sa1.file_path:
+        if self.sa1.text:
             labels = self.get_labels_from_alphabet(self.sa1)
             prob_layout.addWidget(
                 QLabel("Безусловные вероятности текста A"), 0, 0, alignment=Qt.AlignCenter)
@@ -428,7 +462,7 @@ class UI(QMainWindow):
                 condi_prob_A, 1, 0, alignment=Qt.AlignCenter)
 
         # Все данные вероятностей по одному тексту B
-        if self.sa2.file_path:
+        if self.sa2.text:
             labels = self.get_labels_from_alphabet(self.sa2)
             prob_layout.addWidget(
                 QLabel("Безусловные вероятности текста B"), 0, 1, alignment=Qt.AlignCenter)
@@ -455,7 +489,7 @@ class UI(QMainWindow):
         tab.addTab(condi_prob_container, "Условные")
 
         # Все данные вероятностей при паре текстов A и B
-        if self.sa1.file_path and self.sa2.file_path:
+        if self.sa1.text and self.sa2.text:
             labels = self.get_labels_from_alphabet(self.sa1)
             # 4 страница — совместные вероятности пары текстов
             joint_prob_two_container = QWidget()
@@ -548,7 +582,7 @@ class UI(QMainWindow):
         stacked_widget = QStackedWidget()
 
         # Первая страница (Гистограмма A)
-        if self.sa1.file_path != "":
+        if self.sa1.text:
             page1 = QWidget()
             layout1 = QVBoxLayout()
             layout1.addWidget(
@@ -559,7 +593,7 @@ class UI(QMainWindow):
             stacked_widget.addWidget(page1)
 
         # Вторая страница (Гистограмма B)
-        if self.sa2.file_path != "":
+        if self.sa2.text:
             page2 = QWidget()
             layout2 = QVBoxLayout()
             layout2.addWidget(
@@ -570,7 +604,7 @@ class UI(QMainWindow):
             stacked_widget.addWidget(page2)
 
         # Добавляем кнопки переключения
-        if self.sa1.file_path != "" and self.sa2.file_path != "":
+        if self.sa1.text and self.sa2.text:
             button_layout = QHBoxLayout()
             btn1 = QPushButton("Гистограмма A")
             btn2 = QPushButton("Гистограмма B")
@@ -621,7 +655,7 @@ class UI(QMainWindow):
         container.setLayout(layout)
 
         # Заголовок
-        layout.addWidget(QLabel("Экспорт результатов анализа в файл Excel"),
+        layout.addWidget(QLabel("Экспорт результатов анализа"),
                          0, 0, 1, 2, alignment=Qt.AlignTop | Qt.AlignCenter)
 
         # Список меток и соответствующих им чекбоксов
@@ -672,7 +706,7 @@ class UI(QMainWindow):
             {'bg_color': '#5690d6', 'border': 1})
         bg_data_format = workbook.add_format(
             {'bg_color': '#b5cef3', 'border': 1})
-        if self.sa1.file_path:
+        if self.sa1.text:
             entropy_A_results = [
                 ("Энтропия A:", round(self.sa1.entropy, 4)),
                 ("Марковская энтропия H(A|A):",
@@ -680,7 +714,7 @@ class UI(QMainWindow):
             ]
             entropy_results.extend(entropy_A_results)
 
-        if self.sa2.file_path:
+        if self.sa2.text:
             entropy_B_results = [
                 ("Энтропия B:", round(self.sa2.entropy, 4)),
                 ("Марковская энтропия H(B|B):",
@@ -688,7 +722,7 @@ class UI(QMainWindow):
             ]
             entropy_results.extend(entropy_B_results)
 
-        if self.sa2.file_path and self.sa1.file_path:
+        if self.sa2.text and self.sa1.text:
             entropy_AB_results = [
                 ("Марковская энтропия H(A|B):", round(
                     self.sa1.markov_entropy_with(self.sa2), 4)),
@@ -712,9 +746,9 @@ class UI(QMainWindow):
 
     def probabilities_tables_worksheet(self, workbook):
 
-        if self.sa1.file_path:
+        if self.sa1.text:
             labels = self.get_labels_from_alphabet(self.sa1)
-        elif self.sa2.file_path:
+        elif self.sa2.text:
             labels = self.get_labels_from_alphabet(self.sa2)
 
         def write_table_to_workbook(title, data, cell_w=5, cell_h=20):
@@ -748,7 +782,7 @@ class UI(QMainWindow):
                     worksheet.write(
                         k+1, 1, round(data[k], 3), bg_data_format)
 
-        if self.sa1.file_path:
+        if self.sa1.text:
             write_table_to_workbook(
                 "P(A)", self.sa1.prob)
             write_table_to_workbook(
@@ -756,7 +790,7 @@ class UI(QMainWindow):
             write_table_to_workbook(
                 "P(A|A)", self.sa1.cond_prob)
 
-        if self.sa2.file_path:
+        if self.sa2.text:
             write_table_to_workbook(
                 "P(B)", self.sa2.prob)
             write_table_to_workbook(
@@ -764,7 +798,7 @@ class UI(QMainWindow):
             write_table_to_workbook(
                 "P(B|B)", self.sa2.cond_prob)
 
-        if self.sa2.file_path and self.sa1.file_path:
+        if self.sa2.text and self.sa1.text:
             # Запись совместных вероятностей A и B
             write_table_to_workbook("P(A,B)",
                                     self.sa1.calculate_conditional_prob_with(self.sa2))
@@ -793,11 +827,11 @@ class UI(QMainWindow):
         if self.cbx_export_probabilities.isChecked():
             self.probabilities_tables_worksheet(workbook)
         if self.cbx_export_histograms.isChecked():
-            if self.sa1.file_path:
+            if self.sa1.text:
                 hist_A_exp = export.ImageExporter(self.hist_A.scene())
                 hist_A_exp.export(
                     f'{folder_path}histogramm_A.png')
-            if self.sa2.file_path:
+            if self.sa2.text:
                 hist_B_exp = export.ImageExporter(self.hist_B.scene())
                 hist_B_exp.export(
                     f'{folder_path}histogramm_B.png')
