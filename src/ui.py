@@ -15,12 +15,20 @@ import pyqtgraph.exporters as export
 from PySide6.QtCore import *
 from PySide6.QtWidgets import *
 from PySide6.QtGui import *
-from PySide6.QtMultimedia import QSoundEffect
+from PySide6.QtMultimedia import QSoundEffect, QMediaDevices
+
 from datetime import datetime
 import xlsxwriter
 import os
 import sys
-current_dir = os.path.dirname(os.path.abspath(__file__))
+
+
+def resource_path(relative_path):
+    if getattr(sys, 'frozen', False):
+        base_path = os.path.dirname(sys.executable)
+    else:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
 
 class UI(QMainWindow):
@@ -65,8 +73,6 @@ class UI(QMainWindow):
         font = self.font()  # Получаем текущий шрифт приложения
         font.setPointSize(13)  # Устанавливаем размер шрифта
         self.setFont(font)
-        # Показываем окно
-        self.show()
 
     def centerOnScreen(self):
         # Получаем геометрию основного экрана
@@ -161,19 +167,25 @@ class UI(QMainWindow):
         self.button_analyze.clicked.connect(self.start_analyze)
         combined_layout.addWidget(self.button_analyze)
 
-        # Предварительная загрузка звуковых эффектов
-        self.soundError = QSoundEffect()
-        self.soundError.setSource(QUrl.fromLocalFile(
-            os.path.join(current_dir, "sounds", "snd_error.wav")))
-        self.soundError.setVolume(0.5)
-        self.soundWarning = QSoundEffect()
-        self.soundWarning.setSource(QUrl.fromLocalFile(
-            os.path.join(current_dir, "sounds", "snd_warning.wav")))
-        self.soundWarning.setVolume(0.5)
-        self.soundSuccess = QSoundEffect()
-        self.soundSuccess.setSource(QUrl.fromLocalFile(
-            os.path.join(current_dir, "sounds", "snd_success.wav")))
-        self.soundSuccess.setVolume(0.5)
+        output_devices = QMediaDevices.audioOutputs()
+        if not output_devices:
+            print("Нет доступных аудиоустройств!")
+        else:
+            def create_sound_effect(file_name):
+                sound = QSoundEffect()
+                sound.setSource(QUrl.fromLocalFile(
+                    resource_path(os.path.join("src", "sounds", file_name))))
+                sound.setAudioDevice(audio_device)
+                sound.setVolume(0.2)
+                return sound
+            # Получение устройства вывода
+            audio_device = QMediaDevices.defaultAudioOutput()
+            print(f"Используется устройство: {audio_device.description()}")
+            # Создание звуковых эффектов
+            self.soundError = create_sound_effect("snd_error3.wav")
+            self.soundWarning = create_sound_effect("snd_warning.wav")
+            self.soundSuccess = create_sound_effect("snd_success.wav")
+
         # Устанавливаем общий макет в контейнер
         combined_container.setLayout(combined_layout)
 
