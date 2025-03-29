@@ -36,7 +36,8 @@ class UI(QMainWindow):
         super().__init__()
         self.sa1 = StaticAnalyzer()  # Для первого текста
         self.sa2 = StaticAnalyzer()  # Для второго текста
-        self.setWindowTitle("Анализатор текста")
+        self.setWindowTitle(
+            "Статический анализатор текста. Каримов Сафо, 1311")
         self.setGeometry(100, 100, 990, 700)
         self.centerOnScreen()
 
@@ -95,6 +96,13 @@ class UI(QMainWindow):
         # Фиксируем размер окна
         self.setFixedSize(window_size.width(), window_size.height())
 
+    def QLabelWithFont(self, text, fontsize):
+        label = QLabel(text)
+        font = QFont()
+        font.setPointSize(fontsize)
+        label.setFont(font)
+        return label
+
     def selecting_files_for_analysis_page(self):
 
         # Контейнер для кнопок и текстовых полей
@@ -132,8 +140,10 @@ class UI(QMainWindow):
         combined_layout.addLayout(texts_layout)
 
         # Выбор алфавита
-        self.lbl_analyze_alphabet = QLabel("Выберите используемый алфавит:")
-        combined_layout.addWidget(self.lbl_analyze_alphabet)
+        self.lbl_analyze_alphabet = self.QLabelWithFont(
+            "Выберите используемый алфавит:", 17)
+        combined_layout.addWidget(
+            self.lbl_analyze_alphabet)
 
         # Создаем контейнер для радиокнопок
         radiobuttons_layout = QHBoxLayout()
@@ -164,6 +174,10 @@ class UI(QMainWindow):
         combined_layout.addLayout(radiobuttons_layout)
         # Кнопка анализа
         self.button_analyze = QPushButton("Начать анализ")
+        font = QFont()
+        font.setPointSize(16)
+        self.button_analyze.setFont(font)
+        self.button_analyze.setMinimumSize(200, 40)
         self.button_analyze.clicked.connect(self.start_analyze)
         combined_layout.addWidget(self.button_analyze)
 
@@ -182,7 +196,7 @@ class UI(QMainWindow):
             audio_device = QMediaDevices.defaultAudioOutput()
             print(f"Используется устройство: {audio_device.description()}")
             # Создание звуковых эффектов
-            self.soundError = create_sound_effect("snd_error3.wav")
+            self.soundError = create_sound_effect("snd_error.wav")
             self.soundWarning = create_sound_effect("snd_warning.wav")
             self.soundSuccess = create_sound_effect("snd_success.wav")
 
@@ -320,11 +334,11 @@ class UI(QMainWindow):
 
     def start_analyze(self):
         # Выполняем анализ
-        if not self.sa1.file_path:
+        if not self.sa1.text:
             self.read_text_from_QTextEdit(self.text_edit1, self.sa1)
             self.process_loaded_text(
                 self.sa1, self.sa2, self.text_edit1, self.text_edit2)
-        if not self.sa2.file_path:
+        if not self.sa2.text:
             self.read_text_from_QTextEdit(self.text_edit2, self.sa2)
             self.process_loaded_text(
                 self.sa2, self.sa1, self.text_edit2, self.text_edit1)
@@ -391,40 +405,63 @@ class UI(QMainWindow):
         self.stacked_widget.addWidget(main_analyze_container)
 
     def entropy_info_widget(self):
+        def add_label(text, row, col, span=1, align=Qt.AlignTop | Qt.AlignCenter):
+            label = self.QLabelWithFont(text, 17)
+            stats_layout.addWidget(label, row, col, 1, span, alignment=align)
+            return label
+
         container = QWidget()
-        stats_layout = QGridLayout()  # Табличный макет
+        stats_layout = QGridLayout()
+        stats_layout.setSpacing(5)  # Уменьшаем расстояние между элементами
+        stats_layout.setContentsMargins(
+            10, 10, 10, 10)  # Уменьшаем внешние отступы
         container.setLayout(stats_layout)
-        # Добавляем заголовки и значения в макет
+
+        title_added = False
+        if self.sa1.text and self.sa2.text:
+            title_added = True
+            add_label("Вычисленные энтропии:", 0, 0,
+                      4, Qt.AlignTop | Qt.AlignCenter)
+        row = 1
         if self.sa1.text:
-            stats_layout.addWidget(QLabel("Энтропия A:"), 0, 0)
-            stats_layout.addWidget(QLabel(f"{self.sa1.entropy:.4f}"), 0, 1)
+            if not title_added:
+                add_label("Вычисленные энтропии:", 0, 0,
+                          2, Qt.AlignTop | Qt.AlignCenter)
+            add_label("Энтропия A:", row, 0)
+            add_label(f"{self.sa1.entropy:.4f}", row, 1)
+            row += 1
 
-            stats_layout.addWidget(QLabel("Марковская энтропия H(A|A):"), 1, 0)
-            stats_layout.addWidget(
-                QLabel(f"{self.sa1.markov_entropy:.4f}"), 1, 1)
+            add_label("Марковская энтропия H(A|A):", row, 0)
+            add_label(f"{self.sa1.markov_entropy:.4f}", row, 1)
+            row += 1
+
+        rowB = 1
         if self.sa2.text:
-            stats_layout.addWidget(QLabel("Энтропия B:"), 0, 2)
-            stats_layout.addWidget(QLabel(f"{self.sa2.entropy:.4f}"), 0, 3)
+            if not title_added:
+                add_label("Вычисленные энтропии:", 0, 2,
+                          2, Qt.AlignTop | Qt.AlignCenter)
+            add_label("Энтропия B:", rowB, 2)
+            add_label(f"{self.sa2.entropy:.4f}", rowB, 3)
+            rowB += 1
 
-            stats_layout.addWidget(QLabel("Марковская энтропия H(B|B):"), 1, 2)
-            stats_layout.addWidget(
-                QLabel(f"{self.sa2.markov_entropy:.4f}"), 1, 3)
-        if self.sa2.text and self.sa1.text:
-            stats_layout.addWidget(QLabel("Марковская энтропия H(A|B):"), 2, 0)
-            stats_layout.addWidget(
-                QLabel(f"{self.sa1.markov_entropy_with(self.sa2):.4f}"), 2, 1)
+            add_label("Марковская энтропия H(B|B):", rowB, 2)
+            add_label(f"{self.sa2.markov_entropy:.4f}", rowB, 3)
+            rowB += 1
 
-            stats_layout.addWidget(QLabel("Марковская энтропия H(B|A):"), 2, 2)
-            stats_layout.addWidget(
-                QLabel(f"{self.sa2.markov_entropy_with(self.sa1):.4f}"), 2, 3)
+        if self.sa1.text and self.sa2.text:
+            add_label("Марковская энтропия H(A|B):", row, 0)
+            add_label(f"{self.sa1.markov_entropy_with(self.sa2):.4f}", row, 1)
 
-            stats_layout.addWidget(QLabel("Совместная энтропия H(A,B):"), 3, 0)
-            stats_layout.addWidget(
-                QLabel(f"{self.sa1.joint_entropy_with(self.sa2):.4f}"), 3, 1)
+            add_label("Марковская энтропия H(B|A):", row, 2)
+            add_label(f"{self.sa2.markov_entropy_with(self.sa1):.4f}", row, 3)
+            row += 1
 
-            stats_layout.addWidget(QLabel("Совместная энтропия H(B,A):"), 3, 2)
-            stats_layout.addWidget(
-                QLabel(f"{self.sa2.joint_entropy_with(self.sa1):.4f}"), 3, 3)
+            add_label("Совместная энтропия H(A,B):", row, 0)
+            add_label(f"{self.sa1.joint_entropy_with(self.sa2):.4f}", row, 1)
+
+            add_label("Совместная энтропия H(B,A):", row, 2)
+            add_label(f"{self.sa2.joint_entropy_with(self.sa1):.4f}", row, 3)
+
         return container
 
     def get_labels_from_alphabet(self, sa):
@@ -459,19 +496,19 @@ class UI(QMainWindow):
         if self.sa1.text:
             labels = self.get_labels_from_alphabet(self.sa1)
             prob_layout.addWidget(
-                QLabel("Безусловные вероятности текста A"), 0, 0, alignment=Qt.AlignCenter)
+                self.QLabelWithFont("Безусловные вероятности текста A", 17), 0, 0, alignment=Qt.AlignCenter)
             prob_A = self.create_table_with_data(self.sa1.prob, labels)
             prob_layout.addWidget(prob_A, 1, 0, alignment=Qt.AlignCenter)
 
             joint_prob_layout.addWidget(
-                QLabel("Совместные вероятности текста A"), 0, 0, alignment=Qt.AlignCenter)
+                self.QLabelWithFont("Совместные вероятности текста A", 17), 0, 0, alignment=Qt.AlignCenter)
             joint_prob_A = self.create_table_with_data(
                 self.sa1.joint_prob, labels)
             joint_prob_layout.addWidget(
                 joint_prob_A, 1, 0, alignment=Qt.AlignCenter)
 
             condi_prob_layout.addWidget(
-                QLabel("Условные вероятности текста A"), 0, 0, alignment=Qt.AlignCenter)
+                self.QLabelWithFont("Условные вероятности текста A", 17), 0, 0, alignment=Qt.AlignCenter)
             condi_prob_A = self.create_table_with_data(
                 self.sa1.cond_prob, labels)
             condi_prob_layout.addWidget(
@@ -481,19 +518,19 @@ class UI(QMainWindow):
         if self.sa2.text:
             labels = self.get_labels_from_alphabet(self.sa2)
             prob_layout.addWidget(
-                QLabel("Безусловные вероятности текста B"), 0, 1, alignment=Qt.AlignCenter)
+                self.QLabelWithFont("Безусловные вероятности текста B", 17), 0, 1, alignment=Qt.AlignCenter)
             prob_B = self.create_table_with_data(self.sa2.prob, labels)
             prob_layout.addWidget(prob_B, 1, 1, alignment=Qt.AlignCenter)
 
             joint_prob_layout.addWidget(
-                QLabel("Совместные вероятности текста B"), 0, 1, alignment=Qt.AlignCenter)
+                self.QLabelWithFont("Совместные вероятности текста B", 17), 0, 1, alignment=Qt.AlignCenter)
             joint_prob_B = self.create_table_with_data(
                 self.sa2.joint_prob, labels)
             joint_prob_layout.addWidget(
                 joint_prob_B, 1, 1, alignment=Qt.AlignCenter)
 
             condi_prob_layout.addWidget(
-                QLabel("Условные вероятности текста B"), 0, 1, alignment=Qt.AlignCenter)
+                self.QLabelWithFont("Условные вероятности текста B", 17), 0, 1, alignment=Qt.AlignCenter)
             condi_prob_B = self.create_table_with_data(
                 self.sa2.cond_prob, labels)
             condi_prob_layout.addWidget(
@@ -513,14 +550,14 @@ class UI(QMainWindow):
             joint_prob_two_container.setLayout(joint_prob_two_layout)
 
             joint_prob_two_layout.addWidget(
-                QLabel("Совместные вероятнсти A и B текстов"), 0, 0, alignment=Qt.AlignCenter)
+                self.QLabelWithFont("Совместные вероятнсти A и B текстов", 17), 0, 0, alignment=Qt.AlignCenter)
             joint_prob_AB = self.create_table_with_data(
                 self.sa1.calculate_conditional_prob_with(self.sa2), labels)
             joint_prob_two_layout.addWidget(
                 joint_prob_AB, 1, 0, alignment=Qt.AlignCenter)
 
             joint_prob_two_layout.addWidget(
-                QLabel("Совместные вероятнсти B и A текстов"), 0, 1, alignment=Qt.AlignCenter)
+                self.QLabelWithFont("Совместные вероятнсти B и A текстов", 17), 0, 1, alignment=Qt.AlignCenter)
             joint_prob_BA = self.create_table_with_data(
                 self.sa2.calculate_conditional_prob_with(self.sa1), labels)
             joint_prob_two_layout.addWidget(
@@ -535,14 +572,14 @@ class UI(QMainWindow):
             condi_prob_two_container.setLayout(condi_prob_two_layout)
 
             condi_prob_two_layout.addWidget(
-                QLabel("Условные вероятнсти A при тексте B"), 0, 0, alignment=Qt.AlignCenter)
+                self.QLabelWithFont("Условные вероятнсти A при тексте B", 17), 0, 0, alignment=Qt.AlignCenter)
             condi_prob_AB = self.create_table_with_data(
                 self.sa1.calculate_conditional_prob_with(self.sa2), labels)
             condi_prob_two_layout.addWidget(
                 condi_prob_AB, 1, 0, alignment=Qt.AlignCenter)
 
             condi_prob_two_layout.addWidget(
-                QLabel("Условные вероятнсти B при тексте A"), 0, 1, alignment=Qt.AlignCenter)
+                self.QLabelWithFont("Условные вероятнсти B при тексте A", 17), 0, 1, alignment=Qt.AlignCenter)
             condi_prob_BA = self.create_table_with_data(
                 self.sa2.calculate_conditional_prob_with(self.sa1), labels)
             condi_prob_two_layout.addWidget(
@@ -602,7 +639,7 @@ class UI(QMainWindow):
             page1 = QWidget()
             layout1 = QVBoxLayout()
             layout1.addWidget(
-                QLabel("Гистограмма встречаемости символов текста A"), alignment=Qt.AlignTop)
+                self.QLabelWithFont("Гистограмма встречаемости символов текста A", 17), alignment=Qt.AlignTop | Qt.AlignCenter)
             hist_cont, self.hist_A = self.create_histogram(self.sa1)
             layout1.addWidget(hist_cont)
             page1.setLayout(layout1)
@@ -613,7 +650,7 @@ class UI(QMainWindow):
             page2 = QWidget()
             layout2 = QVBoxLayout()
             layout2.addWidget(
-                QLabel("Гистограмма встречаемости символов текста B"), alignment=Qt.AlignTop)
+                self.QLabelWithFont("Гистограмма встречаемости символов текста B", 17), alignment=Qt.AlignTop | Qt.AlignCenter)
             hist_cont, self.hist_B = self.create_histogram(self.sa2)
             layout2.addWidget(hist_cont)
             page2.setLayout(layout2)
@@ -671,7 +708,7 @@ class UI(QMainWindow):
         container.setLayout(layout)
 
         # Заголовок
-        layout.addWidget(QLabel("Экспорт результатов анализа"),
+        layout.addWidget(self.QLabelWithFont("Экспорт результатов анализа", 17),
                          0, 0, 1, 2, alignment=Qt.AlignTop | Qt.AlignCenter)
 
         # Список меток и соответствующих им чекбоксов
@@ -689,14 +726,14 @@ class UI(QMainWindow):
 
         # Добавляем метки и чекбоксы
         for row, (label_text, checkbox_name) in enumerate(options, start=1):
-            label = QLabel(label_text)
+            label = self.QLabelWithFont(label_text, 17)
             checkbox = QCustomCheckBox(self.frame)
             checkbox.setChecked(True)
             self.apply_custom_style(checkbox)
 
             # Устанавливаем минимальные размеры для чекбокса
             # Настройте размеры по необходимости
-            checkbox.setMinimumSize(80, 30)
+            checkbox.setMinimumSize(72, 27)
 
             # Добавляем в макет
             layout.addWidget(
@@ -709,6 +746,10 @@ class UI(QMainWindow):
 
         # Кнопка экспорта
         self.btn_export = QPushButton("Создать файл экспорта")
+        font = QFont()
+        font.setPointSize(16)
+        self.btn_export.setFont(font)
+        self.btn_export.setMinimumSize(200, 40)
         self.btn_export.clicked.connect(self.create_export_files)
         layout.addWidget(self.btn_export, len(options) + 1, 0, 1, 2,
                          alignment=Qt.AlignTop | Qt.AlignCenter)

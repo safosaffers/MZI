@@ -3,6 +3,7 @@ __pycache__
 htmlcov
 *.coverage
 env/
+venv/
 *.xlsx
 Analyze_results/
 pth_shots/

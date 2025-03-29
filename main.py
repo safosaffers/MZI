@@ -24,7 +24,7 @@ ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     app.setWindowIcon(
-        QIcon(resource_path(os.path.join("src", "images", "logo_white.ico"))))
+        QIcon(resource_path(os.path.join("src", "images", "logos.ico"))))
 
     window = UI()
     window.show()
