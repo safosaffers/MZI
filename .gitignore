@@ -11,3 +11,4 @@ Qss/
 logs/
 src/test_static_analyzer.py
 src/pyqt_examples.py
+*.exe

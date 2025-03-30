@@ -16,21 +16,10 @@ from PySide6.QtCore import *
 from PySide6.QtWidgets import *
 from PySide6.QtGui import *
 from PySide6.QtMultimedia import QSoundEffect, QMediaDevices
-
 from datetime import datetime
 import xlsxwriter
 import os
-import sys
-
-
-def resource_path(relative_path):
-    if getattr(sys, 'frozen', False):
-        base_path = os.path.dirname(sys.executable)
-    else:
-        base_path = os.path.abspath(".")
-    return os.path.join(base_path, relative_path)
-
-
+from pathlib import Path
 class UI(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -181,20 +170,19 @@ class UI(QMainWindow):
         self.button_analyze.clicked.connect(self.start_analyze)
         combined_layout.addWidget(self.button_analyze)
 
-        output_devices = QMediaDevices.audioOutputs()
-        if not output_devices:
-            print("Нет доступных аудиоустройств!")
-        else:
+        self.output_devices = QMediaDevices.audioOutputs()
+        if self.output_devices:
             def create_sound_effect(file_name):
                 sound = QSoundEffect()
+                
+                parent_dir = Path(__file__).parent.parent
                 sound.setSource(QUrl.fromLocalFile(
-                    resource_path(os.path.join("src", "sounds", file_name))))
+                    os.path.join(parent_dir, "assets", "sounds", file_name)))
                 sound.setAudioDevice(audio_device)
                 sound.setVolume(0.2)
                 return sound
             # Получение устройства вывода
             audio_device = QMediaDevices.defaultAudioOutput()
-            print(f"Используется устройство: {audio_device.description()}")
             # Создание звуковых эффектов
             self.soundError = create_sound_effect("snd_error.wav")
             self.soundWarning = create_sound_effect("snd_warning.wav")
@@ -325,12 +313,13 @@ class UI(QMainWindow):
         self.apply_shadow_effect(modal)
         modal.show()
 
-        sound = {
-            "success": self.soundSuccess,
-            "warning": self.soundWarning,
-            "error": self.soundError
-        }.get(status, self.soundError)
-        sound.play()
+        if self.output_devices:
+            sound = {
+                "success": self.soundSuccess,
+                "warning": self.soundWarning,
+                "error": self.soundError
+            }.get(status, self.soundError)
+            sound.play()
 
     def start_analyze(self):
         # Выполняем анализ

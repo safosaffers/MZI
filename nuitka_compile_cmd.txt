@@ -1,0 +1,9 @@
+nuitka main.py
+ --windows-icon-from-ico=assets/images/logos.ico
+ --include-data-dir=assets/sounds=assets/sounds
+ --include-data-dir=assets/images=assets/images
+ --remove-output --follow-imports --onefile
+ --enable-plugin=pyside6
+ --include-module=PySide6.QtMultimedia
+ --onefile-windows-splash-screen-image=assets/images/loading.png
+ --output-filename=Text_analyzer__KS --disable-console
