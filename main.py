@@ -6,7 +6,9 @@ from src.ui import UI
 import sys
 import os
 import ctypes
+import time
 
+time.sleep(3)
 from pathlib import Path
 if "NUITKA_ONEFILE_PARENT" in os.environ:
     splash_filename = os.path.join(
@@ -19,10 +21,8 @@ if "NUITKA_ONEFILE_PARENT" in os.environ:
         os.unlink(splash_filename)
 print("Splash Screen has been removed")
 
-# Уникальный идентификатор для Windows
-myappid = u'mycompany.myproduct.subproduct.version'
-ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
+time.sleep(6)
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     parent_dir = Path(__file__).parent

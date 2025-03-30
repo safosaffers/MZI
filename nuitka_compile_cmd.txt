@@ -6,4 +6,4 @@ nuitka main.py
  --enable-plugin=pyside6
  --include-module=PySide6.QtMultimedia
  --onefile-windows-splash-screen-image=assets/images/loading.png
- --output-filename=Text_analyzer__KS --disable-console
+ --output-filename=Text_analyzer__KS
