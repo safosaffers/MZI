@@ -113,11 +113,6 @@ class StaticAnalyzer:
 
         return self.trimmed_to_max_len
 
-        # Добавляем формальный символ конца файла
-        if USE_START_AND_EOF_SYMBOL:
-            self.text_in_alphabet_numbers.append(0)  # Конец файла
-            self.text_in_alphabet.append('Ø')
-
     def trimm_text_to_n(self, n):
         if USE_START_AND_EOF_SYMBOL:
             self.text_in_alphabet = self.text_in_alphabet[:(n-1)]+['Ø']
