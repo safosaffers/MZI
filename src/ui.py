@@ -20,6 +20,8 @@ from datetime import datetime
 import xlsxwriter
 import os
 from pathlib import Path
+
+
 class UI(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -161,6 +163,27 @@ class UI(QMainWindow):
 
         # Добавляем макет с радиокнопками
         combined_layout.addLayout(radiobuttons_layout)
+
+        # Задание точности округлений результатов анализа
+        set_precision_layout = QHBoxLayout()
+        set_precision_layout.setContentsMargins(0, 0, 0, 0)
+        set_precision_layout.setSpacing(0)
+        label_left = self.QLabelWithFont(
+            "Округлять результаты до ", 17)
+        set_precision_layout.addWidget(label_left)
+        self.cb_set_precision = QComboBox()
+        self.cb_set_precision.setStyleSheet("font-size: 17px;")
+        self.cb_set_precision.addItems(
+            ['3', '4', '5', '6', '7', '8'])
+        self.cb_set_precision.setCurrentText('3')
+        self.cb_set_precision.setFixedWidth(50)
+        set_precision_layout.addWidget(self.cb_set_precision)
+        label_right = self.QLabelWithFont(
+            " знаков после запятой", 17)
+        set_precision_layout.addWidget(label_right)
+        set_precision_layout.addStretch()
+        combined_layout.addLayout(set_precision_layout)
+
         # Кнопка анализа
         self.button_analyze = QPushButton("Начать анализ")
         font = QFont()
@@ -174,7 +197,7 @@ class UI(QMainWindow):
         if self.output_devices:
             def create_sound_effect(file_name):
                 sound = QSoundEffect()
-                
+
                 parent_dir = Path(__file__).parent.parent
                 sound.setSource(QUrl.fromLocalFile(
                     os.path.join(parent_dir, "assets", "sounds", file_name)))
@@ -322,6 +345,7 @@ class UI(QMainWindow):
             sound.play()
 
     def start_analyze(self):
+        self.results_precision = int(self.cb_set_precision.currentText())
         # Выполняем анализ
         if not self.sa1.text:
             self.read_text_from_QTextEdit(self.text_edit1, self.sa1)
@@ -417,11 +441,11 @@ class UI(QMainWindow):
                 add_label("Вычисленные энтропии:", 0, 0,
                           2, Qt.AlignTop | Qt.AlignCenter)
             add_label("Энтропия A:", row, 0)
-            add_label(f"{self.sa1.entropy:.4f}", row, 1)
+            add_label(str(self.my_round(self.sa1.entropy)), row, 1)
             row += 1
 
             add_label("Марковская энтропия H(A|A):", row, 0)
-            add_label(f"{self.sa1.markov_entropy:.4f}", row, 1)
+            add_label(str(self.my_round(self.sa1.markov_entropy)), row, 1)
             row += 1
 
         rowB = 1
@@ -430,26 +454,30 @@ class UI(QMainWindow):
                 add_label("Вычисленные энтропии:", 0, 2,
                           2, Qt.AlignTop | Qt.AlignCenter)
             add_label("Энтропия B:", rowB, 2)
-            add_label(f"{self.sa2.entropy:.4f}", rowB, 3)
+            add_label(str(self.my_round(self.sa2.entropy)), rowB, 3)
             rowB += 1
 
             add_label("Марковская энтропия H(B|B):", rowB, 2)
-            add_label(f"{self.sa2.markov_entropy:.4f}", rowB, 3)
+            add_label(str(self.my_round(self.sa2.markov_entropy)), rowB, 3)
             rowB += 1
 
         if self.sa1.text and self.sa2.text:
             add_label("Марковская энтропия H(A|B):", row, 0)
-            add_label(f"{self.sa1.markov_entropy_with(self.sa2):.4f}", row, 1)
+            add_label(str(self.my_round(
+                self.sa1.markov_entropy_with(self.sa2))), row, 1)
 
             add_label("Марковская энтропия H(B|A):", row, 2)
-            add_label(f"{self.sa2.markov_entropy_with(self.sa1):.4f}", row, 3)
+            add_label(str(self.my_round(
+                self.sa2.markov_entropy_with(self.sa1))), row, 3)
             row += 1
 
             add_label("Совместная энтропия H(A,B):", row, 0)
-            add_label(f"{self.sa1.joint_entropy_with(self.sa2):.4f}", row, 1)
+            add_label(str(self.my_round(
+                self.sa1.joint_entropy_with(self.sa2))), row, 1)
 
             add_label("Совместная энтропия H(B,A):", row, 2)
-            add_label(f"{self.sa2.joint_entropy_with(self.sa1):.4f}", row, 3)
+            add_label(str(self.my_round(
+                self.sa2.joint_entropy_with(self.sa1))), row, 3)
 
         return container
 
@@ -579,16 +607,17 @@ class UI(QMainWindow):
 
         return tab
 
-    def create_table_with_data(self, data, labels, width=380, height=450, cell_w=50, cell_h=30):
+    def create_table_with_data(self, data, labels, width=380, height=450, cell_w=83, cell_h=30):
+        cell_w = (self.results_precision+1) * 12
         table = QTableWidget()
         table.setRowCount(len(data))
         table.setColumnCount(
             len(data[0]) if isinstance(data[0], list) else 1)
         is_matrix = isinstance(data[0], list)
-        cell_w = cell_w if is_matrix else 2*cell_w
         # Размер таблицы
-        if not is_matrix:
-            table.setFixedWidth(cell_w+table.verticalHeader().width())
+        if not (is_matrix):
+            table.setFixedWidth(
+                cell_w+table.verticalHeader().width()+table.horizontalHeader().width())
         else:
             table.setFixedWidth(width)
         table.setFixedHeight(height)
@@ -610,9 +639,12 @@ class UI(QMainWindow):
             if is_matrix:
                 for l in range(len(data[k])):
                     table.setItem(k, l, QTableWidgetItem(
-                        str(round(data[k][l], 3))))
+                        str(self.my_round(data[k][l]))))
+                    table.item(k, l).setTextAlignment(Qt.AlignCenter)
             else:
-                table.setItem(k, 0, QTableWidgetItem(str(round(data[k], 3))))
+                table.setItem(k, 0, QTableWidgetItem(
+                    str(self.my_round(data[k]))))
+                table.item(k, 0).setTextAlignment(Qt.AlignCenter)
         return table
 
     def histograms_page(self):
@@ -745,6 +777,10 @@ class UI(QMainWindow):
 
         return container
 
+    def my_round(self, num):
+        # f"{num:.{self.results_precision}f}"
+        return round(num, self.results_precision)
+
     def add_entropy_worksheet(self, workbook):
         entropy_worksheet = workbook.add_worksheet("Энтропии")
         entropy_results = []
@@ -754,30 +790,31 @@ class UI(QMainWindow):
             {'bg_color': '#b5cef3', 'border': 1})
         if self.sa1.text:
             entropy_A_results = [
-                ("Энтропия A:", round(self.sa1.entropy, 4)),
+                ("Энтропия A:", str(self.my_round(self.sa1.entropy))),
                 ("Марковская энтропия H(A|A):",
-                    round(self.sa1.markov_entropy, 4))
+                    self.my_round(self.sa1.markov_entropy))
             ]
             entropy_results.extend(entropy_A_results)
 
         if self.sa2.text:
             entropy_B_results = [
-                ("Энтропия B:", round(self.sa2.entropy, 4)),
+                ("Энтропия B:", self.my_round(
+                    self.sa2.entropy)),
                 ("Марковская энтропия H(B|B):",
-                    round(self.sa2.markov_entropy, 4))
+                    self.my_round(self.sa2.markov_entropy))
             ]
             entropy_results.extend(entropy_B_results)
 
         if self.sa2.text and self.sa1.text:
             entropy_AB_results = [
-                ("Марковская энтропия H(A|B):", round(
-                    self.sa1.markov_entropy_with(self.sa2), 4)),
-                ("Марковская энтропия H(B|A):", round(
-                    self.sa2.markov_entropy_with(self.sa1), 4)),
-                ("Совместная энтропия H(A,B):", round(
-                    self.sa1.joint_entropy_with(self.sa2), 4)),
-                ("Совместная энтропия H(B,A):", round(
-                    self.sa2.joint_entropy_with(self.sa1), 4))
+                ("Марковская энтропия H(A|B):", self.my_round(
+                    self.sa1.markov_entropy_with(self.sa2))),
+                ("Марковская энтропия H(B|A):", self.my_round(
+                    self.sa2.markov_entropy_with(self.sa1))),
+                ("Совместная энтропия H(A,B):", self.my_round(
+                    self.sa1.joint_entropy_with(self.sa2))),
+                ("Совместная энтропия H(B,A):", self.my_round(
+                    self.sa2.joint_entropy_with(self.sa1)))
             ]
             entropy_results.extend(entropy_AB_results)
         if not entropy_results:
@@ -797,7 +834,8 @@ class UI(QMainWindow):
         elif self.sa2.text:
             labels = self.get_labels_from_alphabet(self.sa2)
 
-        def write_table_to_workbook(title, data, cell_w=5, cell_h=20):
+        def write_table_to_workbook(title, data, cell_w=50, cell_h=20):
+            cell_w = self.results_precision+1
             worksheet = workbook.add_worksheet(title)
             is_matrix = isinstance(data[0], list)
             cell_w = cell_w if is_matrix else 2*cell_w
@@ -823,10 +861,10 @@ class UI(QMainWindow):
                 if is_matrix:
                     for l in range(len(data[k])):
                         worksheet.write(
-                            k+1, l+1, round(data[k][l], 3), bg_data_format)
+                            k+1, l+1, self.my_round(data[k][l]), bg_data_format)
                 else:
                     worksheet.write(
-                        k+1, 1, round(data[k], 3), bg_data_format)
+                        k+1, 1, self.my_round(data[k]), bg_data_format)
 
         if self.sa1.text:
             write_table_to_workbook(
