@@ -8,7 +8,7 @@
 import numpy as np
 import sys
 sys.path.append('../')
-USE_START_AND_EOF_SYMBOL = True
+USE_START_AND_EOF_SYMBOL = False
 USE_SHORT_ALPHABET_FOR_DEBUG = False
 
 
@@ -23,8 +23,12 @@ class StaticAnalyzer:
                 self.alphabet_len = 3
                 self.alphabet = "аб "
         else:
-            self.alphabet_len = 35  # 34 +1
-            self.alphabet = "Øабвгдеёжзийклмнопрстуфхцчшщъыьэюя "
+            if USE_START_AND_EOF_SYMBOL:
+                self.alphabet_len = 35
+                self.alphabet = "Øабвгдеёжзийклмнопрстуфхцчшщъыьэюя "
+            else:
+                self.alphabet_len = 34
+                self.alphabet = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя "
         self.alphabet_name = "rus_34"
         self.file_path = ""
         # text_len - длина текста в алфавите,
@@ -54,6 +58,11 @@ class StaticAnalyzer:
             rus_32 = "Øабвгдежзийклмнопрстуфхцчшщъыьэюя"
             lat_27 = "Øabcdefghijklmnopqrstuvwxyz "
             lat_25 = "Øabcdefghiklmnopqrstuvwxyz"
+        else:
+            rus_34 = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя "
+            rus_32 = "абвгдежзийклмнопрстуфхцчшщъыьэюя"
+            lat_27 = "abcdefghijklmnopqrstuvwxyz "
+            lat_25 = "abcdefghiklmnopqrstuvwxyz"
         self.alphabet_name = alphabet_name
         match alphabet_name:
             case "rus_34":
@@ -217,7 +226,7 @@ class StaticAnalyzer:
         # Считаем частоты пар символов из обоих текстов
         minLen = min(self.text_len, other.text_len)
         total_pairs = 0
-        for i in range(minLen):  # Для случаев двух текстов последний "нуль символ" не смотрится
+        for i in range(minLen):
             char_a = self.text_in_alphabet_numbers[i]
             char_b = other.text_in_alphabet_numbers[i]
             joint_frequencies[char_a][char_b] += 1
