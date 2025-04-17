@@ -132,7 +132,7 @@ class UI(QMainWindow):
 
         # Выбор алфавита
         self.lbl_analyze_alphabet = self.QLabelWithFont(
-            "Выберите используемый алфавит:", 17)
+            "Выберите используемый алфавит:", 14)
         combined_layout.addWidget(
             self.lbl_analyze_alphabet)
 
@@ -146,12 +146,13 @@ class UI(QMainWindow):
             ("Русский", "rus_34"),
             ("Русский без 'ё' и '_'", "rus_32"),
             ("Латиница", "lat_27"),
-            ("Латиница без 'j' и ' '", "lat_25")
+            ("Латиница без 'j' и '_'", "lat_25")
         ]
 
         # Создаем радиокнопки
         for idx, (label, value) in enumerate(alphabets):
             radio = QRadioButton(label)
+            radio.setStyleSheet("font-size: 20px;")
             radio.setChecked(idx == 0)  # Первая кнопка активна по умолчанию
             radio.alphabet = value  # Добавляем пользовательский атрибут
             radiobuttons_layout.addWidget(radio)
@@ -169,17 +170,17 @@ class UI(QMainWindow):
         set_precision_layout.setContentsMargins(0, 0, 0, 0)
         set_precision_layout.setSpacing(0)
         label_left = self.QLabelWithFont(
-            "Округлять результаты до ", 17)
+            "Округлять результаты до ", 14)
         set_precision_layout.addWidget(label_left)
         self.cb_set_precision = QComboBox()
-        self.cb_set_precision.setStyleSheet("font-size: 17px;")
+        self.cb_set_precision.setStyleSheet("font-size: 14px;")
         self.cb_set_precision.addItems(
-            ['3', '4', '5', '6', '7', '8'])
-        self.cb_set_precision.setCurrentText('3')
+            ['4', '5', '6', '7', '8'])
+        self.cb_set_precision.setCurrentText('6')
         self.cb_set_precision.setFixedWidth(50)
         set_precision_layout.addWidget(self.cb_set_precision)
         label_right = self.QLabelWithFont(
-            " знаков после запятой", 17)
+            " знаков после запятой", 14)
         set_precision_layout.addWidget(label_right)
         set_precision_layout.addStretch()
         combined_layout.addLayout(set_precision_layout)
@@ -617,20 +618,21 @@ class UI(QMainWindow):
         # Размер таблицы
         if not (is_matrix):
             table.setFixedWidth(
-                cell_w+table.verticalHeader().width()+table.horizontalHeader().width())
+                cell_w+table.verticalHeader().width()+30)
         else:
             table.setFixedWidth(width)
         table.setFixedHeight(height)
         # Заголовки таблиц
         if is_matrix:
+            table.horizontalHeader().setDefaultSectionSize(cell_w)
             table.setHorizontalHeaderLabels(
                 list(labels))
         else:
+            table.horizontalHeader().setDefaultSectionSize(cell_w+30)
             table.setHorizontalHeaderLabels(["p(a_i)"])
         table.setVerticalHeaderLabels(
             list(labels))
         # Размеры заголовков
-        table.horizontalHeader().setDefaultSectionSize(cell_w)
         table.verticalHeader().setDefaultSectionSize(cell_h)
         # запрет редактирования значений таблицы
         table.setEditTriggers(
@@ -729,14 +731,15 @@ class UI(QMainWindow):
         container.setLayout(layout)
 
         # Заголовок
-        layout.addWidget(self.QLabelWithFont("Экспорт результатов анализа", 17),
+        layout.addWidget(self.QLabelWithFont("Экспорт данных", 17),
                          0, 0, 1, 2, alignment=Qt.AlignTop | Qt.AlignCenter)
 
         # Список меток и соответствующих им чекбоксов
         options = [
-            ("Энтропии", "cbx_export_entropy"),
-            ("Таблицы вероятностей", "cbx_export_probabilities"),
-            ("Гистограммы частот", "cbx_export_histograms")
+            ("Энтропии:", "cbx_export_entropy"),
+            ("Таблицы вероятностей:", "cbx_export_probabilities"),
+            ("Гистограммы частот:", "cbx_export_histograms"),
+            ("Анализируемые файлы:", "cbx_export_texts")
         ]
 
         # Создаем фрейм для чекбоксов
@@ -758,7 +761,7 @@ class UI(QMainWindow):
 
             # Добавляем в макет
             layout.addWidget(
-                label, row, 0, alignment=Qt.AlignTop | Qt.AlignCenter)
+                label, row, 0, alignment=Qt.AlignTop | Qt.AlignRight)
             layout.addWidget(checkbox, row, 1,
                              alignment=Qt.AlignTop | Qt.AlignCenter)
 
@@ -766,14 +769,13 @@ class UI(QMainWindow):
             setattr(self, checkbox_name, checkbox)
 
         # Кнопка экспорта
-        self.btn_export = QPushButton("Создать файл экспорта")
+        self.btn_export = QPushButton("Выполнить экспорт данных")
         font = QFont()
         font.setPointSize(16)
         self.btn_export.setFont(font)
         self.btn_export.setMinimumSize(200, 40)
         self.btn_export.clicked.connect(self.create_export_files)
-        layout.addWidget(self.btn_export, len(options) + 1, 0, 1, 2,
-                         alignment=Qt.AlignTop | Qt.AlignCenter)
+        layout.addWidget(self.btn_export, len(options) + 1, 0, 1, 2)
 
         return container
 
@@ -790,7 +792,7 @@ class UI(QMainWindow):
             {'bg_color': '#b5cef3', 'border': 1})
         if self.sa1.text:
             entropy_A_results = [
-                ("Энтропия A:", str(self.my_round(self.sa1.entropy))),
+                ("Энтропия A:", self.my_round(self.sa1.entropy)),
                 ("Марковская энтропия H(A|A):",
                     self.my_round(self.sa1.markov_entropy))
             ]
@@ -835,17 +837,16 @@ class UI(QMainWindow):
             labels = self.get_labels_from_alphabet(self.sa2)
 
         def write_table_to_workbook(title, data, cell_w=50, cell_h=20):
-            cell_w = self.results_precision+1
+            cell_w = self.results_precision+2
             worksheet = workbook.add_worksheet(title)
             is_matrix = isinstance(data[0], list)
-            cell_w = cell_w if is_matrix else 2*cell_w
             # Размер таблицы
             if not is_matrix:
                 worksheet.set_column(0, 1, cell_w)
             else:
                 worksheet.set_column(0, len(data[0]), cell_w)
             bg_lbl_format = workbook.add_format(
-                {'bg_color': '#5690d6', 'border': 1})
+                {'bg_color': '#5690d6', 'border': 1, 'align': 'center'})
 
             # Заголовки для данных
             if not is_matrix:
@@ -919,6 +920,17 @@ class UI(QMainWindow):
                 hist_B_exp = export.ImageExporter(self.hist_B.scene())
                 hist_B_exp.export(
                     f'{folder_path}histogramm_B.png')
+        if self.cbx_export_texts.isChecked():
+            if self.sa1.text:
+                with open(os.path.join(folder_path, "A_text.txt"), "w", encoding="utf-8") as file:
+                    text_str = ''.join(self.sa1.text_in_alphabet)
+                    file.write(text_str)
+
+            if self.sa2.text:
+                with open(os.path.join(folder_path, "B_text.txt"), "w", encoding="utf-8") as file:
+                    text_str = ''.join(self.sa2.text_in_alphabet)
+                    file.write(text_str)
+
         workbook.close()
         self.show_message(
             "success", text=f"Результаты успешно сохранены\n и доступны по пути:\n{folder_path}")
