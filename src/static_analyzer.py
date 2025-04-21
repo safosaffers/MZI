@@ -112,7 +112,8 @@ class StaticAnalyzer:
                 self.text_in_alphabet_numbers.append(self.alphabet.find(char))
                 self.text_len += 1
         else:
-            n += 1
+            n = n+1
+        print(f"text_len = {self.text_len}")
         if USE_START_AND_EOF_SYMBOL:
             self.text_in_alphabet_numbers.append(0)  # Конец файла
             self.text_in_alphabet.append('Ø')
@@ -157,7 +158,7 @@ class StaticAnalyzer:
     def joint_prob_and_frequencies(self):
         joint_frequencies = [
             [0 for _ in range(self.alphabet_len)] for _ in range(self.alphabet_len)]  # +1
-        total_pairs = 0
+        total_pairs = 1
         if USE_START_AND_EOF_SYMBOL:
             total_pairs = 1  # пара начало-конец
         text_len = len(self.text_in_alphabet_numbers)
@@ -280,8 +281,8 @@ class StaticAnalyzer:
         for i in range(self.alphabet_len):
             for j in range(self.alphabet_len):
                 if conditional_prob[i][j] != 0:
-                    markov_entropy -= self.prob[j]*conditional_prob[i][j] * \
-                        np.log2(conditional_prob[i][j])
+                    markov_entropy += self.prob[j]*conditional_prob[i][j] * \
+                        np.log2(1/conditional_prob[i][j])
         self.markov_entropy = markov_entropy
         return self.markov_entropy
 

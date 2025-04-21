@@ -5,6 +5,7 @@
 """
 
 # Подключение стилей
+from PySide6.QtGui import QFont, QTextCharFormat, Qt
 from PySide6.QtCore import QEasingCurve
 from Custom_Widgets.QCustomModals import QCustomModals
 from Custom_Widgets.QCustomCheckBox import QCustomCheckBox
@@ -16,6 +17,7 @@ from PySide6.QtCore import *
 from PySide6.QtWidgets import *
 from PySide6.QtGui import *
 from PySide6.QtMultimedia import QSoundEffect, QMediaDevices
+from PySide6.QtGui import QFont, QTextCharFormat, Qt
 from datetime import datetime
 import xlsxwriter
 import os
@@ -94,6 +96,17 @@ class UI(QMainWindow):
         label.setFont(font)
         return label
 
+
+    def QTextEdit_with_fixed_style(self, text_edit):
+        text_edit.setTextBackgroundColor(Qt.white)
+        text_edit.setTextColor(Qt.black)
+
+        format = QTextCharFormat()
+        format.setFont(QFont("Times New Roman", 14))
+        text_edit.setCurrentCharFormat(format)
+        text_edit.setAcceptRichText(False)  # Отключить вставку с форматированием
+
+        self.text_edit1.setAcceptRichText(False)  # Отключить вставку с форматированием
     def selecting_files_for_analysis_page(self):
 
         # Контейнер для кнопок и текстовых полей
@@ -115,9 +128,13 @@ class UI(QMainWindow):
         # Тексты анализируемых файлов
         texts_layout = QHBoxLayout()
         self.text_edit1 = QTextEdit()
+        self.QTextEdit_with_fixed_style(self.text_edit1)
         self.text_edit1.setPlaceholderText(
             "Введите текст здесь или загрузите его из файла...")
+        
         self.text_edit2 = QTextEdit()
+        self.QTextEdit_with_fixed_style(self.text_edit2)
+
         self.text_edit2.setPlaceholderText(
             "Введите текст здесь или загрузите его из файла...")
         self.text_edit1.textChanged.connect(
