@@ -136,12 +136,11 @@ class StaticAnalyzer:
             self.text_in_alphabet = self.text_in_alphabet[:n]
             self.text_in_alphabet_numbers = self.text_in_alphabet_numbers[:n]
 
-############################################################
-#            Методы для вычисления вероятностей            #
-############################################################
+#################################################################################
+#                       Методы для вычисления вероятностей                      #
+#################################################################################
 
 # Для одного текста:
-
 # Вычисление вероятностей и частот отдельных символов
     def prob_and_frequencies(self):
         frequencies = [0] * (self.alphabet_len)
@@ -162,7 +161,7 @@ class StaticAnalyzer:
         if USE_START_AND_EOF_SYMBOL:
             total_pairs = 1  # пара начало-конец
         text_len = len(self.text_in_alphabet_numbers)
-        for i in range(0, text_len-1, 2):
+        for i in range(text_len-1):
             char_1 = self.text_in_alphabet_numbers[i]
             char_2 = self.text_in_alphabet_numbers[i+1]
             joint_frequencies[char_1][char_2] += 1
@@ -215,6 +214,7 @@ class StaticAnalyzer:
 # Для пары текстов:
 
 # Вычисление совместной вероятности для пары текстов
+
     def calculate_joint_prob_with(self, other):
         if self.alphabet_number != other.alphabet_number:
             raise ValueError("Тексты должны иметь одинаковый алфавит!.")
@@ -225,7 +225,7 @@ class StaticAnalyzer:
         # Считаем частоты пар символов из обоих текстов
         minLen = min(self.text_len, other.text_len)
         total_pairs = 0
-        for i in range(minLen):
+        for i in range(minLen):  # Для случаев двух текстов последний "нуль символ" не смотрится
             char_a = self.text_in_alphabet_numbers[i]
             char_b = other.text_in_alphabet_numbers[i]
             joint_frequencies[char_a][char_b] += 1
@@ -251,14 +251,14 @@ class StaticAnalyzer:
         for i in range(alp_len):
             for j in range(alp_len):
                 if other.prob[j] != 0:
-                    conditional_prob[i][j] = joint_prob[j][i] / \
+                    conditional_prob[i][j] = joint_prob[i][j] / \
                         other.prob[j]
 
         return conditional_prob
 
-############################################################
-#              Методы для вычисления энтропии              #
-############################################################
+#################################################################################
+#                       Методы для вычисления энтропии                          #
+#################################################################################
 
 # Вычисление энтропии
     def count_entropy(self):
@@ -276,11 +276,16 @@ class StaticAnalyzer:
         conditional_prob = self.cond_prob
 
         markov_entropy = 0
+        markov_entropy2 = 0
         for i in range(self.alphabet_len):
             for j in range(self.alphabet_len):
-                if conditional_prob[i][j] != 0:
-                    markov_entropy += self.prob[j]*conditional_prob[i][j] * \
-                        np.log2(1.0/conditional_prob[i][j])
+                if joint_prob[j][i] != 0 and conditional_prob[j][i] != 0:
+                    markov_entropy -= joint_prob[j][i] * \
+                        np.log2(conditional_prob[j][i])
+                    # markov_entropy2 -= self.prob[i]*conditional_prob[j][i] * \
+                    #     np.log2(conditional_prob[j][i])
+        print(f"markov_entropy = {markov_entropy}")
+        print(f"markov_entropy2 = {markov_entropy2}")
         self.markov_entropy = markov_entropy
         return self.markov_entropy
 
@@ -293,23 +298,21 @@ class StaticAnalyzer:
         markov_entropy = 0
         for i in range(self.alphabet_len):
             for j in range(other.alphabet_len):
-                if conditional_prob[i][j] != 0:
-                    markov_entropy += joint_prob[j][i] * np.log2(1.0/conditional_prob[i][j])
+                if joint_prob[j][i] != 0 and conditional_prob[j][i] != 0:
+                    markov_entropy -= joint_prob[j][i] * \
+                        np.log2(conditional_prob[j][i])
 
         return markov_entropy
 
 # Вычисление совместной энтропии
     def joint_entropy_with(self, other):
         joint_prob = self.calculate_joint_prob_with(other)
-        cond_prob = self.calculate_conditional_prob_with(
-            other)
+
         joint_entropy = 0
         for i in range(self.alphabet_len):
             for j in range(other.alphabet_len):
-                # print(
-                #     f"p(i,j)={joint_prob[i][j]}=p(i)*p(j|i)={self.prob[i]*cond_prob[j][i]}")
-                if (joint_prob[i][j]) != 0:
-                    joint_entropy += joint_prob[i][j] * \
-                        np.log2(1.0/(joint_prob[i][j]))
+                if joint_prob[i][j] != 0:
+                    joint_entropy -= joint_prob[i][j] * \
+                        np.log2(joint_prob[i][j])
 
         return joint_entropy
