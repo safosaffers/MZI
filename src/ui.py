@@ -438,6 +438,7 @@ class UI(QMainWindow):
     def entropy_info_widget(self):
         def add_label(text, row, col, span=1, align=Qt.AlignTop | Qt.AlignCenter):
             label = self.QLabelWithFont(text, 17)
+            label.setTextInteractionFlags(Qt.TextSelectableByMouse)
             stats_layout.addWidget(label, row, col, 1, span, alignment=align)
             return label
 
@@ -903,11 +904,11 @@ class UI(QMainWindow):
         if self.sa2.text and self.sa1.text:
             # Запись совместных вероятностей A и B
             write_table_to_workbook("P(A,B)",
-                                    self.sa1.calculate_conditional_prob_with(self.sa2))
+                                    self.sa1.calculate_joint_prob_with(self.sa2))
 
             # Запись совместных вероятностей B и A
             write_table_to_workbook("P(B,A)",
-                                    self.sa2.calculate_conditional_prob_with(self.sa1))
+                                    self.sa2.calculate_joint_prob_with(self.sa1))
 
             # Запись условных вероятностей A при тексте B
             write_table_to_workbook("P(A|B)",
